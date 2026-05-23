@@ -1,0 +1,37 @@
+# configs/config_production.yaml
+data:
+  data_root: "./kaggle_3m"
+  zip_path: "kaggle_3m.zip"
+  output_dir: "./outputs_final"
+
+model:
+  img_size: 128
+  input_channels: 3
+  base_filters: 32
+  group_norm_g: 8
+  dropout: 0.25
+  ds_weight: 0.30
+
+training:
+  batch_size: 16
+  epochs: 60
+  warmup_epochs: 5
+  lr_initial: 0.0002
+  lr_min: 0.000001
+  weight_decay: 0.0001
+  grad_clip: 1.0
+  seed: 42
+  n_folds: 5
+
+loss:
+  ft_alpha: 0.70
+  ft_beta: 0.30
+  ft_gamma: 0.75
+  bf_gamma: 2.0
+  loss_ft_w: 0.65
+  loss_bf_w: 0.35
+  label_smoothing: 0.05
+
+post_processing:
+  min_component_px: 20
+  es_patience: 15

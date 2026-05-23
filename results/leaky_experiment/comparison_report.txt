@@ -1,0 +1,44 @@
+
+======================================================================
+  SCIENTIFIC COMPARISON: DATA LEAKAGE INFLATION ANALYSIS
+  LGG Brain MRI (110 patients, ~3929 slices)
+  Architecture: Attention Res-UNet 4.8M params — IDENTICAL in both runs
+======================================================================
+
+  METHODOLOGY:
+  ┌─────────────────────────┬──────────────────┬─────────────────┐
+  │ Criterion               │ Leaky (this run) │ Clean (v3)      │
+  ├─────────────────────────┼──────────────────┼─────────────────┤
+  │ Split method            │ Random slice     │ GroupKFold      │
+  │ Patient grouping        │ ✗ Absent         │ ✓ Strict        │
+  │ Train/test patient OL.  │ ✓ ~100%          │ ✗ None (0%)     │
+  │ Cross-validation        │ ✗ Single split   │ ✓ 5-fold        │
+  │ Comparable to           │ LiteMRINet 2025  │ This paper      │
+  └─────────────────────────┴──────────────────┴─────────────────┘
+
+  RESULTS:
+  ┌─────────────────────────┬──────────────────┬─────────────────┬──────────┐
+  │ Metric                  │ Leaky (inflated) │ Clean (honest)  │ Inflation│
+  ├─────────────────────────┼──────────────────┼─────────────────┼──────────┤
+  │ Hard Dice (all slices)  │ 0.9232           │ 0.8967          │ +0.0265 │
+  │ Hard IoU  (all slices)  │ 0.8937           │ 0.8646          │ +0.0291 │
+  │ Hard Dice (tumor+ only) │ 0.8366           │ 0.7735          │ +0.0631 │
+  └─────────────────────────┴──────────────────┴─────────────────┴──────────┘
+
+  vs LiteMRINet (PLOS ONE 2025, random slice split):
+  ┌─────────────────────────┬──────────────────┬─────────────────┐
+  │ Metric                  │ LiteMRINet       │ Ours (clean)    │
+  ├─────────────────────────┼──────────────────┼─────────────────┤
+  │ F1 / Dice (all slices)  │ 85.50%           │ 89.67%         │
+  │ mIoU      (all slices)  │ 87.20%           │ 86.46%         │
+  │ Split method            │ Random slice     │ GroupKFold      │
+  │ Data leakage            │ Present          │ None            │
+  └─────────────────────────┴──────────────────┴─────────────────┘
+
+  KEY FINDING:
+  Data leakage inflates Hard Dice by ~2.65% (all slices)
+  and ~6.31% (tumor-positive slices).
+
+  Our clean-protocol model achieves 89.67% Dice (all slices),
+  EXCEEDING LiteMRINet's 85.50% that used a leaky protocol.
+======================================================================
