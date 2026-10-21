@@ -1,0 +1,4 @@
+Method,3D Volumetric Dice (%),HD95 (voxels),ASD (voxels),Precision (%),Recall (%)
+2D Baseline (Tau=0.50),76.00 ± 17.94 [Med: 82.96],12.89 ± 19.21 [Med: 3.57],3.59 ± 12.47 [Med: 0.88],71.89,85.96
+2D Nested (Tau_k*),77.57 ± 18.66 [Med: 84.42],11.26 ± 18.32 [Med: 2.34],3.18 ± 12.48 [Med: 0.76],77.40,82.98
+Proposed Anisotropic 3D Z-Hysteresis,77.73 ± 18.65 [Med: 84.42],10.97 ± 18.28 [Med: 2.24],3.10 ± 12.48 [Med: 0.63],77.70,82.99

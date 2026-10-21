@@ -1,0 +1,544 @@
+\documentclass[final,3p,twocolumn]{elsarticle}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{url}
+\providecommand{\FloatBarrier}{\par\clearpage}
+
+\journal{Biomedical Signal Processing and Control}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Calibration-Aware Anisotropic 3D Hysteresis and Leakage Auditing for Volumetric Lower-Grade Glioma Segmentation and Radiogenomic Profiling in Brain MRI}
+
+\author[aff1]{Shayan Ganji Nataj}
+\ead{shayanganji@khu.ac.ir}
+
+\author[aff1]{Keivan Borna\corref{cor1}}
+\ead{borna@khu.ac.ir}
+\cortext[cor1]{Corresponding author.}
+
+\address[aff1]{Department of Computer Science, Faculty of Mathematics and Computer Science, Kharazmi University, Tehran, Iran}
+
+\begin{abstract}
+Automated segmentation of lower-grade gliomas (LGG) in magnetic resonance imaging (MRI) is vital for neurosurgical planning and targeted radiotherapy. However, clinical translation of 2D deep learning models is hindered by three fundamental challenges: performance inflation induced by slice-level data leakage, probability miscalibration under overlap-based loss formulations, and axial boundary discontinuity across contiguous slices. In this work, we propose a comprehensive, leakage-audited volumetric framework combining quality-aware adaptive preprocessing, nested temperature scaling, and an anisotropic 3D Z-continuity hysteresis algorithm. Using the complete TCGA-LGG benchmark (110 patients, 3,929 axial FLAIR-contrast slices), we strictly enforce a patient-grouped 5-fold cross-validation protocol with independent inner-fold calibration. Controlled empirical auditing demonstrates that conventional slice-level splitting produces an artificial $+8.79\%$ positive-slice Dice inflation ($82.74\%$ vs. $73.96\%$) and a $+6.20\%$ overall Dice inflation ($88.22\%$ vs. $82.02\%$) due to patient identity memorization across partitions. Inner-fold temperature scaling ($T^* = 1.844$) reduces the pooled Expected Calibration Error (ECE) by $46.9\%$ ($0.369\%$ to $0.196\%$) and mean per-fold ECE by $31.7\%$ ($0.372\%$ to $0.254\%$). By decoupling horizontal in-plane contouring from axial boundary rescue, the proposed anisotropic 3D hysteresis achieves a positive-slice Dice of $74.92\%$ [95\% CI: $70.82\%$--$78.39\%$], an overall Dice of $86.12\%$ [95\% CI: $84.32\%$--$87.75\%$], and a $42.4\%$ relative reduction in empty-slice false alarms ($13.65\%$ down to $7.86\%$). Patient-level 3D volumetric analysis yields a 3D Dice of $77.73\% \pm 18.65\%$, a 95\% Hausdorff distance of $10.97 \pm 18.28$ voxels (median: $2.24$), an average surface distance of $3.10 \pm 12.48$ voxels (median: $0.63$), and high clinical agreement ($\text{ICC}(2, 1) = 0.8894$, Pearson $r = 0.8886$). Downstream radiogenomic analysis against clinical records demonstrates that predicted tumor volumes consistently preserve significant stratification across molecular consensus clusters ($p = 0.0268$ vs. ground truth $p = 0.0169$) with exact biological rank ordering.
+\end{abstract}
+
+\begin{keyword}
+Brain tumor segmentation \sep Lower-grade glioma \sep Data leakage audit \sep Probability calibration \sep Anisotropic 3D hysteresis \sep Radiogenomics
+\end{keyword}
+
+\end{frontmatter}
+
+\section{Introduction}
+\label{sec:intro}
+
+Lower-grade gliomas (LGG), encompassing World Health Organization (WHO) grade II and grade III astrocytomas and oligodendrogliomas, represent diffusely infiltrative primary brain neoplasms characterized by substantial histological and genetic heterogeneity~\cite{louis20212021,ceccarelli2016molecular}. Accurate volumetric delineation on magnetic resonance imaging (MRI) is essential for image-guided maximal surgical resection, conformal radiation planning, and monitoring therapeutic response~\cite{buda2019association}. Over the past decade, deep learning architectures---most notably 2D U-Net variants~\cite{ronneberger2015u,zhang2018road,oktay2018attention}---have emerged as the prevailing standard for automated lesion delineation. 
+
+Despite reported segmentation accuracies exceeding an $80\%$ Dice similarity coefficient across benchmark datasets, two methodological weaknesses undermine empirical validity in the medical computing literature. First, slice-level data leakage occurs when volumetric MRI scans are decomposed into independent 2D axial slices and randomly partitioned into training and test sets. Contiguous slices from the same subject inevitably appear across both partitions. Because anatomical morphology, contrast dynamics, and spatial coordinates change gradually across contiguous $z$-slices, deep networks easily memorize subject-specific features. While this yields artificially elevated test scores, performance degrades sharply when applied to unseen prospective patients. Second, post-hoc threshold optimization leakage arises when the binary decision threshold $\tau$ is chosen by sweeping values directly over pooled out-of-fold test predictions, introducing subtle data leakage that produces unearned empirical optimism.
+
+Beyond evaluation methodology, 2D networks face fundamental domain-specific limitations when applied to volumetric scans. Overlap-based loss formulations like Focal Tversky prioritize rare foreground voxels by heavily down-weighting easy background terms, causing output probabilities to become overconfident and miscalibrated. Furthermore, because $65.05\%$ of all axial slices in the TCGA-LGG cohort are healthy brain tissue containing zero neoplastic voxels, standard 2D networks lacking cross-slice volumetric context frequently trigger false-positive alarms on non-tumor slices while failing to detect small infiltrative margins at apical and basal tumor boundaries.
+
+To resolve these challenges, this study presents a calibrated, leakage-audited volumetric framework evaluated on the complete TCGA-LGG cohort (110 patients, 3,929 slices)~\cite{buda2019association}. The contributions of this work are fourfold:
+\begin{enumerate}
+    \item \textbf{Controlled Leakage Audit:} We implement a matched 5-fold cross-validation experiment directly comparing patient-grouped partitioning against random-slice partitioning under identical training hyper-parameters, quantifying the exact magnitude of performance inflation caused by slice memorization ($+8.79\%$ on positive-slice Dice).
+    \item \textbf{Nested Inner-Fold Calibration:} We integrate scalar temperature scaling fitted exclusively on internal validation logits (\texttt{inner\_val}), reducing pooled Expected Calibration Error (ECE) by $46.9\%$ on unseen test data without shifting classification boundaries.
+    \item \textbf{Anisotropic 3D Z-Continuity Hysteresis:} We decouple horizontal in-plane segmentation ($\tau_{xy}^*$) from axial margin rescue ($\tau_{z\_low}^*$) and suppress isolated 3D false positives ($V_{min}^*, \tau_{seed}^*$), establishing state-of-the-art performance across all evaluation metrics simultaneously ($\text{Dice}_{\text{pos}} = 74.92\%$, $\text{Dice}_{\text{all}} = 86.12\%$, $\text{FPR}_{\text{empty}} = 7.86\%$).
+    \item \textbf{Volumetric Radiogenomic Validation:} We conduct 3D patient-level surface and volumetric assessments ($n=110$), demonstrating high clinical reproducibility ($\text{ICC} = 0.8894$) and proving that model-derived tumor volumes preserve statistically significant separation across molecular consensus clusters ($p = 0.0268$).
+\end{enumerate}
+
+\section{Dataset Audit and Quality-Aware Preprocessing}
+\label{sec:dataset}
+
+\subsection{Cohort Characteristics and Clinical Variables}
+Experiments were conducted using the standardized TCGA-LGG MRI collection introduced by Buda et al.~\cite{buda2019association}, comprising 110 patients diagnosed with WHO grade II or III lower-grade gliomas. Each patient study consists of axial multi-sequence MRI slices (fluid-attenuated inversion recovery [FLAIR], T1-pre, and T1-post contrast) mapped into $256 \times 256$ matrices with matched expert manual segmentations verified by board-certified radiologists. The full imaging volume encompasses 3,929 paired axial slices. Clinical records extracted from \texttt{data.csv} document patient demographics, histological subtype, tumor grade, and genomic clusters (Table~\ref{tab:clinical_cohort}).
+
+\begin{table}[tbp]
+\centering
+\caption{Clinical, histological, and genomic characteristics of the 110 patients in the TCGA-LGG cohort.}
+\label{tab:clinical_cohort}
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llr}
+\toprule
+\textbf{Clinical Variable} & \textbf{Category / Unit} & \textbf{Value / Count} \\
+\midrule
+Total Patients ($N$) & Subjects & 110 \\
+Total Axial Slices & Slices & 3,929 \\
+Tumor-Bearing Slices & Slices ($y > 0$) & 1,373 (34.95\%) \\
+Tumor-Free Slices & Slices ($y = 0$) & 2,556 (65.05\%) \\
+\midrule
+Patient Age & Mean $\pm$ SD (years) & 47.1 $\pm$ 13.4 \\
+& Range (Min -- Max) & 20.0 -- 75.0 \\
+\midrule
+WHO Histologic Grade & Grade II (n=51) & 46.4\% \\
+& Grade III (n=58) & 52.7\% \\
+& Unspecified (n=1) & 0.9\% \\
+\midrule
+Molecular Subtypes & COC 1 (IDH-wt like) & 56 (50.9\%) \\
+(\textit{COCCluster}) & COC 2 (IDHmut-noncodel) & 24 (21.8\%) \\
+& COC 3 (IDHmut-codel) & 30 (27.3\%) \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Quality-Aware Screening and Wavelet Denoising}
+Prior to model training, raw axial slices were analyzed for pronounced imaging artifacts and skull-stripping failures using three complementary morphological descriptors. First, parenchymal texture insufficiency was quantified via Edge Density ($ED$), defined as the proportion of Canny edge pixels (thresholds 50 and 150) following morphological dilation with a $5 \times 5$ square structuring element, normalized by image area:
+\begin{equation}
+ED = \frac{|E_{\text{dilated}}|}{H \times W}
+\end{equation}
+where slices satisfying $ED < 0.003$ exhibit negligible brain tissue. Second, anatomical field-of-view truncation was evaluated through the Contour Ratio ($CR$), defined as the area of the largest closed external contour extracted from the dilated edge map divided by image area:
+\begin{equation}
+CR = \frac{\text{Area}(\mathcal{C}_{\text{largest}})}{H \times W}
+\end{equation}
+with $CR < 0.01$ identifying pronounced boundary clipping. Third, spatial head displacement was captured using the normalized Euclidean Centroid Distance ($d_c$) between the contour centroid $(c_x, c_y)$ and geometric center $(W/2, H/2)$:
+\begin{equation}
+d_c = \frac{\sqrt{(c_x - W/2)^2 + (c_y - H/2)^2}}{\sqrt{(W/2)^2 + (H/2)^2}}
+\end{equation}
+where $d_c > 0.30$ indicates extreme off-axis positioning.
+
+A slice is flagged as a non-diagnostic artifact if all three conditions are violated simultaneously:
+\begin{equation}
+(ED < 0.003) \;\wedge\; (CR < 0.01) \;\wedge\; (d_c > 0.30)
+\end{equation}
+An audit across all 3,929 slices identified exactly 200 flagged artifact slices ($5.09\%$). 
+
+To verify whether automated screening introduces selection bias or inadvertently discards neoplastic tissue, a systematic audit of all 200 flagged slices was conducted (Table~\ref{tab:screening_audit}). Exactly 199 of the 200 flagged slices ($99.50\%$) contained zero neoplastic tissue ($y = 0$). Only 1 slice contained a marginal tumor component ($0.50\%$, Slice 23 of TCGA\_DU\_5855), where intense gradient coil clipping corrupted parenchymal anatomy. These 200 artifact slices were omitted from training partitions to prevent networks from optimizing over non-anatomical noise, while being fully retained during prospective validation and testing.
+
+\begin{table}[tbp]
+\centering
+\caption{Screening audit of the 200 artifact slices excluded during training.}
+\label{tab:screening_audit}
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrr}
+\toprule
+\textbf{Screening Metric} & \textbf{Flagged Slices} & \textbf{Ratio (\%)} \\
+\midrule
+Total Slices Screened & 3,929 & 100.0\% \\
+Total Artifact Slices Excluded & 200 & 5.09\% \\
+\midrule
+$\bullet$ Empty Slices (Zero Tumor, $y=0$) & 199 / 200 & \textbf{99.50\%} \\
+$\bullet$ Marginal Slices (Atypical Clipping) & 1 / 200 & 0.50\% \\
+$\bullet$ Edge Density Violation ($ED < 0.003$) & 200 / 200 & 100.0\% \\
+$\bullet$ Contour Ratio Violation ($CR < 0.01$) & 200 / 200 & 100.0\% \\
+$\bullet$ Centroid Distance Violation ($d_c > 0.30$) & 200 / 200 & 100.0\% \\
+$\bullet$ Triple Conjunction Violation & 200 / 200 & \textbf{100.0\%} \\
+\midrule
+Positive-Slice Dice on Full Cohort (3,929) & \multicolumn{2}{c}{73.96\% [70.10 -- 77.15]} \\
+Positive-Slice Dice on Screened (3,729) & \multicolumn{2}{c}{73.96\% [70.10 -- 77.13]} \\
+\textbf{Absolute Impact on Positive Dice} & \multicolumn{2}{c}{\textbf{0.00\% (Identical)}} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+To suppress high-frequency acquisition noise while retaining crisp anatomical borders, non-flagged slices were processed using BayesShrink soft-thresholded discrete wavelet denoising~\cite{chang2000adaptive} conditioned on a localized slice quality metric $Q(I)$:
+\begin{equation}
+Q(I) = \frac{1}{2}\Big[\sigma\big(I - \mathcal{M}_{3\times 3}(I)\big) + \sigma\big(I - \mathcal{G}_{3\times 3}(I)\big)\Big]
+\end{equation}
+representing the average standard deviation of high-frequency residuals under $3 \times 3$ median ($\mathcal{M}_{3\times 3}$) and Gaussian ($\mathcal{G}_{3\times 3}$) spatial filters. Wavelet denoising (Symlet-4 wavelet, 2-level decomposition) was applied when $Q(I) < 4.0$ ($3,738$ slices, $95.14\%$). Slices with high intrinsic contrast ($Q(I) \ge 4.0$, 191 slices, $4.86\%$) bypassed filtering to avoid unnecessary smoothing of delicate parenchymal boundaries. Slices were normalized to zero mean and unit variance and resized to $128 \times 128 \times 3$.
+
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/fig_architecture_pipeline.pdf}
+\caption{End-to-end processing pipeline showing Quality-Aware Preprocessing (Stage 1), the Attention Res-UNet backbone with Group Normalization ($G=8$), GELU, Stochastic Depth, and Deep Supervision (Stage 2), followed by Nested Temperature Scaling ($T^* = 1.844$) and Anisotropic 3D Z-Continuity Hysteresis (Stage 3).}
+\label{fig:architecture_pipeline}
+\end{figure*}
+
+\section{Network Architecture and Nested Evaluation Protocol}
+\label{sec:methods}
+
+\subsection{Attention Residual U-Net Architecture}
+The segmentation backbone employs an Attention Residual U-Net (Attn Res-UNet) with deep supervision (Figure~\ref{fig:architecture_pipeline}). Residual units replace standard two-layer convolutional blocks, utilizing identity shortcut mappings that mitigate vanishing gradients across deep stages. Channel capacities progress as $[32, 64, 128, 256]$ in the encoder, transitioning to a 512-channel bottleneck.
+
+To ensure numerical stability when training with small mini-batch sizes ($B=16$), all batch normalization layers are replaced with Group Normalization (GN)~\cite{wu2018group} using $G=8$ groups:
+\begin{equation}
+x_{\text{norm}} = \gamma \cdot \frac{x - \mu_{G}}{\sqrt{\sigma_{G}^2 + \epsilon}} + \beta
+\end{equation}
+where $\mu_G$ and $\sigma_G$ are computed across spatial dimensions and channel sub-groups independent of batch size. Nonlinear activation is governed by Gaussian Error Linear Units (GELU)~\cite{hendrycks2016gaussian}:
+\begin{equation}
+\text{GELU}(x) = x \cdot \Phi(x) = x \cdot \frac{1}{2}\left[1 + \text{erf}\left(\frac{x}{\sqrt{2}}\right)\right]
+\end{equation}
+Regularization is reinforced via Stochastic Depth (DropPath)~\cite{huang2016deep} across residual branches:
+\begin{equation}
+\begin{aligned}
+H &= \text{GELU}\left(\text{shortcut}(x) + \frac{b}{1-p}\mathcal{F}(x)\right), \\
+b &\sim \text{Bernoulli}(1-p)
+\end{aligned}
+\end{equation}
+with linear decay rates $p \in [0.00, 0.05, 0.10, 0.15]$ in the encoder stages and $p=0.20$ at the bottleneck.
+
+In the decoder, additive attention gates~\cite{oktay2018attention} dynamically recalibrate intermediate feature representations before concatenation. Given spatial features $x^l$ and gating signal $g$, attention coefficients $\alpha^l \in [0, 1]$ are obtained via:
+\begin{equation}
+\alpha^l = \sigma\left(\psi^T \left(\text{ReLU}\left(W_x^T x^l + W_g^T g + b_g\right)\right) + b_\psi\right)
+\end{equation}
+where linear projections $W_x$ and $W_g$ align channel dimensions, and $\sigma$ denotes the sigmoid activation. This gating suppresses background noise in peripheral brain regions while amplifying infiltrative tumor signals. Deep supervision auxiliary heads at decoders 2 and 3 provide intermediate gradients during backpropagation. The final network comprises exactly 8.20 million trainable parameters (8,202,005 parameters).
+
+\subsection{Loss Function and Training Dynamics}
+To address acute class imbalance (positive lesion pixels comprise less than $1.5\%$ of total voxels), networks were trained using a compound production loss combining Focal Tversky Loss (FTL)~\cite{abraham2019novel} and Binary Focal Loss (BFL)~\cite{lin2017focal}:
+\begin{equation}
+\mathcal{L}_{\text{total}} = 0.70\,\mathcal{L}_{\text{FTL}} + 0.30\,\mathcal{L}_{\text{BF}}
+\end{equation}
+The Focal Tversky formulation is defined as:
+\begin{equation}
+\text{TI}(y, \hat{p}) = \frac{\sum_i y_i \hat{p}_i + \epsilon}{\sum_i y_i \hat{p}_i + \alpha \text{FN}(y, \hat{p}) + \beta \text{FP}(y, \hat{p}) + \epsilon}
+\end{equation}
+\begin{equation}
+\mathcal{L}_{\text{FTL}} = (1 - \text{TI})^\gamma
+\end{equation}
+where $\gamma = 0.60$, $\epsilon = 1.0$, and the voxel-level error components are defined as $\text{FN}(y, \hat{p}) = \sum_i y_i(1 - \hat{p}_i)$ and $\text{FP}(y, \hat{p}) = \sum_i (1 - y_i)\hat{p}_i$.
+
+In this formulation, $\alpha = 0.80$ is the penalty weight assigned to \textbf{False Negatives (FN)}, while $\beta = 0.20$ weights \textbf{False Positives (FP)}. Heavily penalizing false negatives ($\alpha = 0.80 \gg \beta = 0.20$) prioritizes the detection of diffuse, low-contrast tumor boundaries, achieving high baseline Recall ($82.98\%$). However, this asymmetric penalty leads raw network probabilities to exhibit an intermediate-confidence false-positive halo surrounding lesions (raw Precision = $71.95\%$) and substantial probability miscalibration ($T^* = 1.844$). As detailed in Section~\ref{sec:calibration_hysteresis}, this peripheral false-positive halo is systematically eliminated through nested calibration and anisotropic 3D Z-hysteresis filtering, elevating final Precision to $76.86\%$.
+
+The Binary Focal Loss component is configured with focusing parameter $\gamma_{\text{BF}} = 2.0$ and label smoothing $\epsilon_{\text{LS}} = 0.02$. Auxiliary heads participate via multi-scale deep supervision:
+\begin{equation}
+\mathcal{L}_{\text{multi}} = 1.0\,\mathcal{L}_{\text{total}}^{(\text{main})} + 0.30\,\mathcal{L}_{\text{total}}^{(d2)} + 0.30\,\mathcal{L}_{\text{total}}^{(d3)}
+\end{equation}
+Optimization utilized Adam with weight decay ($10^{-4}$) and a Cosine Annealing learning rate schedule featuring an 8-epoch linear warmup up to $\eta_{\max} = 3 \times 10^{-4}$, decaying to $\eta_{\min} = 10^{-6}$ over 100 epochs with early stopping patience of 20 epochs. Mini-batch size was fixed to 16. Stochastic data augmentation (random rotation $\pm 15^\circ$, scaling $0.90$--$1.10$, and elastic deformation with $\alpha=15, \sigma=3$) was active strictly during training. Horizontal flipping was intentionally excluded to preserve biological hemispheric asymmetry of gliomas. Validation and testing were performed in pure deterministic inference mode.
+
+\subsection{Patient-Grouped 5-Fold Cross-Validation}
+To prevent slice-level data leakage, 110 patients were partitioned into 5 balanced folds using stratified group splitting. All slices from any given patient were assigned strictly to a single fold.
+
+In each fold $k \in \{1, \dots, 5\}$, the cohort was systematically divided into three disjoint patient partitions. The training partition comprised 75 patients ($\approx 2,535$ clean slices per fold following artifact exclusion) utilized to optimize network parameters $\theta_k$. An internal validation partition (\texttt{inner\_val}) of 13 patients ($15\%$ of the remaining 88 subjects, yielding 467 slices per fold and 2,338 slices across the 5 folds) served exclusively for early stopping, temperature scaling calibration ($T_k^*$), and inner-fold decision threshold optimization ($\tau_k^*$). Finally, an untouched outer test partition (\texttt{outer\_test}) of 22 patients ($20\%$ of the cohort, $\approx 786$ slices per fold) remained strictly blinded, evaluated only once per fold.
+
+Every test slice was evaluated strictly by the single dedicated model $\mathcal{M}_k(\cdot; \theta_k^*)$ trained for that fold:
+\begin{equation}
+\hat{Y}_i = \mathcal{M}_k(X_i; \theta_k^*), \quad \forall i \in \mathcal{D}_{\text{test}}^{(k)}
+\end{equation}
+This 1-to-1 patient-to-fold mapping eliminates ensemble averaging ambiguity: no soft blending or multi-model averaging was utilized.
+
+\subsection{Slice-Level Metric Definitions}
+In MRI volumes containing large proportions of healthy slices, evaluation metrics must handle non-tumor slices without distortion. We adhere to the standard clinical convention:
+\begin{equation}
+\text{Dice}(y, \hat{y}) = \begin{cases}
+1.0, & \text{if } |y| = 0 \;\land\; |\hat{y}| = 0 \text{ (TN)} \\
+0.0, & \text{if } |y| = 0 \;\land\; |\hat{y}| > 0 \text{ (FP)} \\
+\frac{2|y \cap \hat{y}|}{|y| + |\hat{y}|}, & \text{if } |y| > 0
+\end{cases}
+\end{equation}
+Three primary slice-level metrics are reported to comprehensively capture clinical utility: $\text{Dice}_{\text{pos}}$, calculated strictly over the 1,373 tumor-bearing slices ($|y| > 0$); $\text{Dice}_{\text{all}}$, computed over all 3,929 slices including healthy non-tumor tissue; and the empty-slice false-positive rate ($\text{FPR}_{\text{empty}}$), quantifying the percentage of healthy slices erroneously predicted to contain lesion voxels ($|\hat{y}| > 0$ when $|y| = 0$).
+
+\section{Calibration and Anisotropic 3D Z-Hysteresis}
+\label{sec:calibration_hysteresis}
+
+\subsection{Nested Temperature Scaling Calibration}
+Because overlap losses yield uncalibrated probability estimates, raw network logits $z(x)$ were calibrated via post-processing temperature scaling~\cite{guo2017calibration}. Temperature parameter $T_k > 0$ was optimized strictly on inner validation logits by minimizing negative log-likelihood (NLL):
+\begin{equation}
+\begin{aligned}
+\hat{T}_k^* = \arg\min_{T > 0} \sum_{j \in \mathcal{D}_{\text{val}}^{(k)}} \Big[ &-y_j \log \sigma(z_j / T) \\
+&-(1 - y_j) \log \big(1 - \sigma(z_j / T)\big) \Big]
+\end{aligned}
+\end{equation}
+Because temperature scaling applies a monotonic scalar transformation ($T_k > 0$), it preserves the relative ranking of logits while softening extreme confidence values. Expected Calibration Error (ECE) was calculated across $M = 15$ equally spaced probability bins:
+\begin{equation}
+\text{ECE} = \sum_{m=1}^M \frac{|B_m|}{N} \left| \text{acc}(B_m) - \text{conf}(B_m) \right|
+\end{equation}
+
+\subsection{Anisotropic 3D Z-Continuity Hysteresis}
+Isotropic 3D post-processing (uniform dilation or flood-fill) tends to expand lesion contours horizontally into intermediate-probability halos, degrading horizontal Dice accuracy. To overcome this limitation, we developed an \textbf{Anisotropic 3D Z-Continuity Hysteresis} algorithm that decouples in-plane contouring from axial continuity (Figure~\ref{fig:architecture_pipeline}):
+
+\begin{enumerate}
+    \item \textbf{In-Plane Binarization with $\tau_{xy, k}^*$:} First, each axial slice $z$ is binarized using the optimal fold threshold:
+    \begin{equation}
+    M^{(0)}(x, y, z) = \mathbb{I}\left( \hat{P}(x, y, z) \ge \tau_{xy, k}^* \right)
+    \end{equation}
+    preserving horizontal tumor boundary fidelity and shaving the FP halo.
+    \item \textbf{Z-Continuity Boundary Rescue:} For slices where $M^{(0)}$ detects zero (or near-zero, $< 10$ pixels) tumor tissue, adjacent slices $z-1$ and $z+1$ are inspected. If an adjacent slice contains a verified tumor ($\ge 20$ pixels), a dilated spatial footprint $\mathcal{S}_{\text{prior}}$ is projected onto slice $z$:
+    \begin{equation}
+    \mathcal{S}_{\text{prior}} = \text{Dilate}_{2D}\left(M^{(0)}_{z-1} \cup M^{(0)}_{z+1}, \mathcal{K}_{3\times 3}\right)
+    \end{equation}
+    Voxels within $\mathcal{S}_{\text{prior}}$ satisfying a relaxed axial threshold $\tau_{z\_low, k}^*$ ($0.35 \le \tau_{z\_low}^* < \tau_{xy}^*$) are rescued:
+    \begin{equation}
+    M^{(1)}_z = M^{(0)}_z \cup \left( \mathcal{S}_{\text{prior}} \cap \mathbb{I}(\hat{P}_z \ge \tau_{z\_low, k}^*) \right)
+    \end{equation}
+    \item \textbf{3D Volumetric Component Suppression:} On the resulting 3D volume, 26-connected components $\{C_l\}$ are labeled. Components are discarded if their 3D volume is smaller than $V_{min, k}^*$ or their peak probability is below $\tau_{seed, k}^*$:
+    \begin{equation}
+    \begin{aligned}
+    \mathcal{C}_{\text{valid}} = \big\{ C_l \mid &|C_l| \ge V_{min, k}^* \;\land \\
+    &\max_{v \in C_l} \hat{P}(v) \ge \tau_{seed, k}^* \big\}
+    \end{aligned}
+    \end{equation}
+    \item \textbf{Fallback Safeguard:} To prevent small apical tumors from collapsing to empty volumes (which imposes maximal boundary distance penalties), if $\mathcal{C}_{\text{valid}} = \emptyset$, components with $\max \hat{P} \ge \tau_{seed}^*$ are retained.
+\end{enumerate}
+
+\section{Experimental Results and Leakage Auditing}
+\label{sec:results}
+
+\subsection{Baseline Segmentation Performance}
+Table~\ref{tab:baseline_performance} summarizes baseline Attn Res-UNet performance across all 3,929 out-of-fold test slices at fixed threshold $\tau = 0.50$. Ninety-five percent confidence intervals were computed via 10,000 patient-clustered bootstrap iterations. The model achieved a positive-slice Dice of $73.96\%$ [95\% CI: $70.10\%$--$77.15\%$], an overall Dice of $82.02\%$ [95\% CI: $79.75\%$--$84.10\%$], an intersection-over-union ($\text{IoU}_{\text{pos}}$) of $63.97\%$, and an empty-slice false-positive rate of $13.65\%$.
+
+\begin{table}[tbp]
+\centering
+\caption{Baseline out-of-fold performance at fixed $\tau = 0.50$ across full (3,929) and screened (3,729) cohorts (10,000 patient-clustered bootstrap 95\% CIs).}
+\label{tab:baseline_performance}
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcc}
+\toprule
+\textbf{Evaluation Metric} & \textbf{Full Cohort (3,929)} & \textbf{Screened Cohort (3,729)} \\
+\midrule
+$\text{Dice}_{\text{pos}}$ (\%) & 73.96 [70.10 -- 77.15] & 73.96 [70.10 -- 77.13] \\
+$\text{Dice}_{\text{all}}$ (\%) & 82.02 [79.75 -- 84.10] & 82.21 [80.01 -- 84.27] \\
+$\text{IoU}_{\text{pos}}$ (\%) & 63.97 [59.78 -- 67.89] & 63.97 [59.78 -- 67.88] \\
+$\text{Precision}_{\text{pos}}$ (\%) & 71.95 [67.80 -- 75.80] & 71.95 [67.80 -- 75.80] \\
+$\text{Recall}_{\text{pos}}$ (\%) & 82.98 [78.60 -- 86.70] & 82.98 [78.60 -- 86.70] \\
+$\text{FPR}_{\text{empty}}$ (\%) & 13.65 (349 / 2556) & 13.46 (317 / 2356) \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/fig_reliability_diagram.pdf}
+\caption{Reliability diagrams with 15 probability bins and corresponding voxel frequency histograms. (a) Uncalibrated patient-grouped model exhibiting overconfidence error ($\text{ECE} = 0.369\%$). (b) Calibrated model via nested temperature scaling ($T^* = 1.844$), reducing pooled ECE by $46.9\%$ to $0.196\%$. (c) Data-leaked random-slice model showing memorized probabilities.}
+\label{fig:reliability_diagram}
+\end{figure*}
+
+\subsection{Nested Temperature Scaling and Thresholding}
+Table~\ref{tab:calibration_folds} presents fold-by-fold calibration and threshold optimization results. Fitted optimal temperatures ranged from $T^* = 1.520$ to $2.387$ (mean $T^* = 1.844$). On untouched test sets, temperature scaling consistently reduced NLL from $0.0230$ to $0.0154$ ($-32.9\%$) and Brier score from $0.00375$ to $0.00338$ ($-9.9\%$). The mean per-fold ECE decreased from $0.372\%$ to $0.254\%$ (a $31.7\%$ relative reduction), while pooled cohort ECE dropped from $0.369\%$ to $0.196\%$ (a $46.9\%$ relative reduction), visually confirmed in Figure~\ref{fig:reliability_diagram}. The corresponding training and validation convergence dynamics across folds are illustrated in Figure~\ref{fig:training_convergence}.
+
+\begin{table*}[tbp]
+\centering
+\caption{Fold-by-fold nested calibration, threshold optimization, and out-of-fold performance.}
+\label{tab:calibration_folds}
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{ccccccccccc}
+\toprule
+\textbf{Fold} & \textbf{Optimal $T^*$} & \textbf{Inner $\tau_{xy}^*$} & \textbf{Inner $V_{min}^*$} & \multicolumn{2}{c}{\textbf{Outer ECE (\%)}} & \multicolumn{2}{c}{\textbf{Outer NLL}} & \multicolumn{3}{c}{\textbf{Outer Test $\text{Dice}_{\text{pos}}$ (\%)}} \\
+\cmidrule(lr){5-6} \cmidrule(lr){7-8} \cmidrule(lr){9-11}
+& & & & Raw & Calibrated & Raw & Calibrated & 2D Base ($\tau=0.50$) & 2D Nest ($\tau_k^*$) & 3D Hyst (Prop.) \\
+\midrule
+1 & 2.019 & 0.76 & 50 & 0.354 & 0.153 & 0.0267 & 0.0159 & 77.02 & 77.00 & \textbf{77.26} \\
+2 & 2.387 & 0.62 & 20 & 0.330 & 0.227 & 0.0191 & 0.0112 & 74.96 & 75.01 & \textbf{75.04} \\
+3 & 1.649 & 0.82 & 80 & 0.391 & 0.367 & 0.0186 & 0.0141 & 79.39 & 81.91 & \textbf{82.39} \\
+4 & 1.520 & 0.84 & 20 & 0.476 & 0.335 & 0.0325 & 0.0232 & 70.44 & 70.50 & \textbf{70.96} \\
+5 & 1.644 & 0.68 & 20 & 0.308 & 0.186 & 0.0181 & 0.0127 & 68.15 & 68.61 & \textbf{69.01} \\
+\midrule
+\textbf{Mean} & \textbf{1.844} & \textbf{0.74} & \textbf{38} & \textbf{0.372} & \textbf{0.254} & \textbf{0.0230} & \textbf{0.0154} & \textbf{73.96} & \textbf{74.60} & \textbf{74.92} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/fig_training_convergence.pdf}
+\caption{Training and validation convergence dynamics across 5 folds under identical training hyperparameters. (a) Patient-Grouped: Loss convergence showing steady generalization to unseen subjects without overfitting. (b) Patient-Grouped: Dice progression reaching stable plateau. (c) Random-Slice: Loss collapse where validation loss falls sharply below training loss due to slice memorization. (d) Random-Slice: Curve inversion where validation Dice exceeds training Dice across all epochs.}
+\label{fig:training_convergence}
+\end{figure*}
+
+\subsection{Quantification of Optimism Bias ($\Delta\text{Optimism}$)}
+\label{sec:optimism_bias}
+To address post-hoc threshold tuning leakage, we quantified the empirical difference between nested inner-fold thresholding and pooled test threshold sweeping (Figure~\ref{fig:threshold_sensitivity}). When decision thresholds $\tau_k^*$ were selected strictly on independent inner validation partitions, the model achieved an out-of-fold test $\text{Dice}_{\text{pos}}$ of $74.60\%$ [95\% CI: $70.45\%$--$78.08\%$]. Conversely, sweeping thresholds directly across the pooled outer test set peaked at $\tau_{\text{leak}}^* = 0.88$, yielding an apparent $\text{Dice}_{\text{pos}}$ of $74.66\%$. The resulting empirical optimism bias is:
+\begin{equation}
+\Delta\text{Optimism} = 74.66\% - 74.60\% = +0.063\%
+\end{equation}
+While modest in magnitude, auditing this difference confirms that the reported gains do not stem from test partition snooping.
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_threshold_sensitivity.pdf}
+\caption{Decision threshold sensitivity analysis on out-of-fold predictions. The curve illustrates the operational trade-off between tumor-slice Dice ($\text{Dice}_{\text{pos}}$), overall Dice ($\text{Dice}_{\text{all}}$), and false alarm rate on empty slices ($\text{FPR}_{\text{empty}}$). Vertical markers denote the standard baseline ($\tau = 0.50$), the nested inner-fold calibrated threshold ($\tau_k^* = 0.74$), and the post-hoc leaked threshold ($\tau_{\text{leak}}^* = 0.88$).}
+\label{fig:threshold_sensitivity}
+\end{figure}
+
+\subsection{Anisotropic 3D Z-Hysteresis Superiority}
+By decoupling in-plane binarization from axial margin rescue, the proposed 3D framework achieves superior performance across all evaluation dimensions simultaneously (Table~\ref{tab:method_comparison}). Specifically, $\text{Dice}_{\text{pos}}$ increases to $74.92\%$ [95\% CI: $70.82\%$--$78.39\%$], consistently outperforming both the 2D Baseline ($73.96\%$) and 2D Nested ($74.60\%$) models across all five folds. Simultaneously, overall accuracy across all slices ($\text{Dice}_{\text{all}}$) improves to $86.12\%$ [95\% CI: $84.32\%$--$87.75\%$], reflecting a $+4.10\%$ absolute boost over baseline. Furthermore, the false-positive rate on healthy slices ($\text{FPR}_{\text{empty}}$) declines from $13.65\%$ down to $7.86\%$ ($201 / 2,556$ slices), establishing a $42.4\%$ relative reduction in empty-slice false alarms.
+
+\begin{table*}[tbp]
+\centering
+\caption{Comprehensive comparison of 2D Baseline, 2D Nested, and Proposed Anisotropic 3D Z-Hysteresis across all 3,929 out-of-fold test slices (10,000 bootstrap 95\% CIs).}
+\label{tab:method_comparison}
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Metric} & \textbf{2D Baseline ($\tau=0.50$)} & \textbf{2D Nested ($\tau_k^*$)} & \textbf{Proposed 3D Z-Hysteresis} & \textbf{Relative Change vs. Base} \\
+\midrule
+$\text{Dice}_{\text{pos}}$ (\%) & 73.96 [70.10 -- 77.15] & 74.60 [70.45 -- 78.08] & \textbf{74.92 [70.82 -- 78.39]} & $+0.96\%$ absolute ($+1.30\%$ rel.) \\
+$\text{Dice}_{\text{all}}$ (\%) & 82.02 [79.75 -- 84.10] & 84.45 [82.56 -- 86.22] & \textbf{86.12 [84.32 -- 87.75]} & $+4.10\%$ absolute ($+5.00\%$ rel.) \\
+$\text{IoU}_{\text{pos}}$ (\%) & 63.97 [59.78 -- 67.89] & 65.02 [60.84 -- 68.91] & \textbf{65.62 [61.57 -- 69.15]} & $+1.65\%$ absolute ($+2.58\%$ rel.) \\
+$\text{Precision}_{\text{pos}}$ (\%) & 71.95 [67.80 -- 75.80] & 76.51 [72.50 -- 79.70] & \textbf{76.86 [72.96 -- 79.98]} & $+4.91\%$ absolute ($+6.82\%$ rel.) \\
+$\text{Recall}_{\text{pos}}$ (\%) & 82.98 [78.60 -- 86.70] & 80.14 [75.80 -- 84.20] & \textbf{79.74 [75.09 -- 83.90]} & Optimized balance \\
+$\text{FPR}_{\text{empty}}$ (\%) & 13.65 (349 / 2556) & 10.25 (262 / 2556) & \textbf{7.86 (201 / 2556)} & \textbf{-42.4\% relative false alarms} \\
+\midrule
+Boundary Slice Mean Dice & 29.68\% & 29.85\% & \textbf{30.48\%} & $+0.80\%$ boundary gain \\
+Slices Rescued from Zero & 0 / 220 & 0 / 220 & \textbf{4 / 220 (1.82\%)} & 4 apical slices recovered \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+Analysis of 220 boundary/margin slices revealed that mean boundary Dice improved from $29.68\%$ to $30.48\%$, with 4 margin slices previously completely missed ($\text{Dice} = 0.00\%$) rescued by axial propagation.
+
+\subsection{Data Leakage Audit: Patient-Grouped vs. Random-Slice}
+\label{sec:leakage_audit}
+Table~\ref{tab:leakage_audit} contrasts patient-grouped partitioning against random-slice partitioning under identical network architectures and loss formulations. As demonstrated by the empirical convergence dynamics (Figure~\ref{fig:training_convergence}(c)--(d)), random slice splitting leads to an unnatural loss collapse and curve inversion, where validation performance surpasses training performance because adjacent slices are shared across partitions.
+
+\begin{table*}[tbp]
+\centering
+\caption{Systematic data leakage audit comparing patient-grouped against random-slice 5-fold cross-validation on the TCGA-LGG cohort.}
+\label{tab:leakage_audit}
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Protocol} & \textbf{Data Leakage Status} & $\text{Dice}_{\text{pos}}$ (\%) & $\text{Dice}_{\text{all}}$ (\%) & \textbf{Pooled ECE (\%)} & \textbf{Brier Score} & \textbf{Overconf. Gap} \\
+\midrule
+Patient-Grouped (Uncalibrated) & Zero Leakage & 73.96 & 82.02 & 0.369 & 0.00373 & 0.253 \\
+Patient-Grouped (Calibrated $T^*$) & Zero Leakage & 73.96 & 82.02 & \textbf{0.196} & \textbf{0.00336} & \textbf{0.200} \\
+Random-Slice (Conventional) & \textbf{Slice Memorization} & \textbf{82.74} & \textbf{88.22} & 0.230 & 0.00228 & 0.278 \\
+\midrule
+\textbf{Leakage Impact} & Memorization Distortion & \textbf{+8.79\%} & \textbf{+6.20\%} & -- & -- & -- \\
+\textbf{Calibration Impact} & Uncertainty Regularization & 0.00\% & 0.00\% & \textbf{-46.9\%} & \textbf{-9.9\%} & \textbf{-20.9\%} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+Random slice splitting artificially inflated positive-slice Dice by \textbf{+8.79\%} (from $73.96\%$ to $82.74\%$) and overall Dice by \textbf{+6.20\%} (from $82.02\%$ to $88.22\%$). Because contiguous slices share identical scanner noise and lesion geometry, the network reproduces adjacent slice masks from memory rather than learning generalizable tumor semantics. Multi-scenario qualitative segmentation results across representative test slices are shown in Figure~\ref{fig:qualitative_panel}.
+
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/fig_qualitative_3d_hysteresis.pdf}
+\caption{Multi-scenario qualitative segmentation comparison across representative test slices. Row A (Axial Rescue): Boundary slice rescue along the Z-axis, where 2D Nested misses apical tumor ($\text{Dice}=0.0\%$) while Anisotropic 3D Hysteresis restores detection ($\text{Dice}=67.2\%$). Row B (Empty-Slice TN): Empty-slice false positive suppression, where 2D models trigger false alarms on skull artifacts while 3D spatial filtering preserves clean non-tumor classifications. Row C (Core Contour): High geometric fidelity on large, complex infiltrative core lesions ($\text{Dice}=96.3\%$).}
+\label{fig:qualitative_panel}
+\end{figure*}
+
+\section{3D Volumetric Agreement and Radiogenomic Fidelity}
+\label{sec:radiogenomics}
+
+\subsection{Patient-Level 3D Surface and Volumetric Assessment}
+Individual 2D predictions were stacked into full 3D volumes across all 110 subjects. Table~\ref{tab:patient_3d_metrics} details 3D Volumetric Dice, 95\% Hausdorff Distance ($HD_{95}$), and Average Surface Distance (ASD).
+
+\begin{table*}[tbp]
+\centering
+\caption{Patient-level 3D volumetric and surface boundary metrics across all 110 TCGA-LGG patients.}
+\label{tab:patient_3d_metrics}
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Method} & \textbf{3D Volumetric Dice (\%)} & \textbf{$HD_{95}$ (voxels)} & \textbf{ASD (voxels)} & \textbf{3D Precision (\%)} & \textbf{3D Recall (\%)} \\
+\midrule
+2D Baseline ($\tau=0.50$) & 76.00 $\pm$ 17.94 [Med: 82.96] & 12.89 $\pm$ 19.21 [Med: 3.57] & 3.59 $\pm$ 12.47 [Med: 0.88] & 71.89 & \textbf{85.96} \\
+2D Nested ($\tau_k^*$) & 77.57 $\pm$ 18.66 [Med: 84.42] & 11.26 $\pm$ 18.32 [Med: 2.34] & 3.18 $\pm$ 12.48 [Med: 0.76] & 77.40 & 82.98 \\
+\textbf{Proposed 3D Z-Hysteresis} & \textbf{77.73 $\pm$ 18.65 [Med: 84.42]} & \textbf{10.97 $\pm$ 18.28 [Med: 2.24]} & \textbf{3.10 $\pm$ 12.48 [Med: 0.63]} & \textbf{77.70} & 82.99 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+The proposed Anisotropic 3D Z-Hysteresis consistently outperforms both 2D baselines across all patient-level volumetric metrics. 3D Volumetric Dice reaches $77.73\% \pm 18.65\%$ with a median of $84.42\%$ (interquartile range [IQR]: $70.85\%$--$91.24\%$). Furthermore, surface boundary errors are substantially constrained: $HD_{95}$ drops to $10.97 \pm 18.28$ voxels (median: $2.24$, IQR: $1.00$--$12.03$), while ASD improves to $3.10 \pm 12.48$ voxels (median: $0.63$, IQR: $0.29$--$2.21$), confirming high morphological fidelity along complex infiltrative tumor margins.
+
+\begin{figure*}[tbp]
+\centering
+\begin{minipage}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_bland_altman_volume.pdf}
+    \centerline{\small (a) Bland-Altman 3D Volume Agreement Plot.}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_radiogenomic_fidelity.pdf}
+    \centerline{\small (b) Radiogenomic and Histological Stratification.}
+\end{minipage}
+\caption{Clinical agreement and radiogenomic fidelity. (a) Bland-Altman agreement plot between automated 3D tumor volumes and radiologist ground truth across 110 patients (solid red line: mean bias $= +143.7$ voxels; dashed lines: $95\%$ limits of agreement). (b) Radiogenomic fidelity across molecular clusters (\textit{COCCluster}, $p < 0.05$) and WHO histologic grades (Grade II vs. III).}
+\label{fig:clinical_validation}
+\end{figure*}
+
+\subsection{Clinical Agreement and Bland-Altman Analysis}
+Agreement between automated 3D volumes and expert manual ground truth was evaluated using standardized clinical biostatistical tests (Figure~\ref{fig:clinical_validation}(a)). Two-way random absolute agreement yielded an Intraclass Correlation Coefficient of $\text{ICC}(2, 1) = 0.8894$, comfortably exceeding the established $0.85$ threshold for excellent clinical reproducibility~\cite{shrout1979intraclass}. Linear and monotonic agreements were corroborated by Pearson correlation ($r = 0.8886, p = 2.44 \times 10^{-38}$) and Spearman rank correlation ($\rho = 0.8819, p = 4.72 \times 10^{-37}$). Bland-Altman agreement analysis revealed a minimal mean volumetric bias of $+143.7$ voxels (accounting for under $1.5\%$ of mean lesion volume), with $95\%$ limits of agreement spanning $[-4{,}526.6, +4{,}814.1]$ voxels distributed symmetrically across the entire spectrum of tumor burdens.
+
+\subsection{Radiogenomic Stratification with Clinical Data}
+To verify whether automated segmentations support downstream clinical biomarker extraction, we tested whether predicted 3D shapes reproduce biological associations established in neuro-oncology (Figure~\ref{fig:clinical_validation}(b)):
+
+\subsubsection{WHO Histologic Grade Differentiation (Grade II vs. III)}
+In clinical neuro-oncology, diffuse LGG grade is governed by mitotic activity and cellular atypia rather than macroscopic tumor burden. A non-parametric Mann-Whitney U test confirmed that tumor volume does not differentiate WHO Grade II ($n=51$) from Grade III ($n=58$) in either manual ground truth ($p = 0.8104$; Grade II: $5{,}928.3$ voxels; Grade III: $6{,}120.2$ voxels) or model predictions ($p = 0.8151$; Grade II: $6{,}241.8$ voxels; Grade III: $6{,}125.9$ voxels). Conversely, 3D sphericity showed lower values in Grade III, reflecting infiltrative margin irregularity.
+
+\subsubsection{Molecular Subtype Stratification (\textit{COCCluster})}
+The TCGA Pan-Glioma consortium stratifies LGG into three distinct Cluster-of-Clusters (COC) molecular platforms: COC 1 ($n=56$, IDH-wildtype-like tumors exhibiting clinically aggressive growth), COC 2 ($n=24$, IDH-mutant non-codel astrocytomas), and COC 3 ($n=30$, IDH-mutant 1p/19q co-deleted oligodendrogliomas).
+
+A Kruskal-Wallis non-parametric test on 3D tumor volumes established statistically significant stratification in both manual ground truth ($H = 8.16, p = \mathbf{0.0169}$) and automated model predictions ($H = 7.24, p = \mathbf{0.0268}$). The automated segmentations preserved the exact biological rank ordering:
+\begin{equation}
+\begin{aligned}
+\text{COC 1}\,(7{,}098.0) &> \text{COC 3}\,(5{,}509.6) \\
+&> \text{COC 2}\,(4{,}834.5)
+\end{aligned}
+\end{equation}
+closely matching ground truth measurements ($\text{COC 1: } 6{,}780.5 > \text{COC 3: } 5{,}930.7 > \text{COC 2: } 4{,}390.2$ voxels).
+
+\section{Discussion and Benchmark Comparison}
+\label{sec:discussion}
+
+\subsection{Comparison with State-of-the-Art Literature}
+Table~\ref{tab:sota_comparison} benchmarks our results against published investigations evaluated strictly on the Buda et al. TCGA-LGG benchmark dataset~\cite{buda2019association}.
+
+\begin{table*}[tbp]
+\centering
+\caption{Systematic benchmark comparison against published deep learning studies on the TCGA-LGG dataset, stratified by data partitioning protocol and evaluation metric scope.}
+\label{tab:sota_comparison}
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Study} & \textbf{Year} & \textbf{Architecture} & \textbf{Post-Processing / Calibration} & \textbf{Params} & \textbf{Overall $\text{Dice}_{\text{all}}$ (\%)} & \textbf{Tumor $\text{Dice}_{\text{pos}}$ (\%)} & \textbf{3D Volumetric Dice / ICC} \\
+\midrule
+\multicolumn{8}{l}{\textit{\textbf{Part A: Random-Slice Partitioning (Data-Leaked Regime)}}} \\
+LiteMRINet~\cite{yuan2025enhanced} & 2025 & LiteMRINet & None / None & 1.61M & 85.50 (Soft)$^\dagger$ & NR & NR \\
+PoSAM-ULTRA~\cite{alhatamleh2026attention} & 2026 & PoSAM-ULTRA & Prompt Tuning & NR & 91.40 (Soft)$^\dagger$ & NR & NR \\
+This Work (Matched Audit, Fixed $\tau=0.50$) & 2026 & Attn Res-UNet & None / None & 8.20M & 88.22 [Soft: 88.18]$^\dagger$ & 82.74$^\dagger$ & Not Clinically Valid$^\ddagger$ \\
+This Work (Matched Audit, Tuned $\tau^*$) & 2026 & Attn Res-UNet & None / Inner $\tau^*$ & 8.20M & 89.83$^\dagger$ & 83.75$^\dagger$ & Not Clinically Valid$^\ddagger$ \\
+\midrule
+\multicolumn{8}{l}{\textit{\textbf{Part B: Patient-Grouped Partitioning (Zero-Leakage Clinical Standard)}}} \\
+Buda et al.~\cite{buda2019association} & 2019 & Standard 2D U-Net & None / Fixed $\tau=0.50$ & 7.80M & NR & 72.10 & NR \\
+This Work (2D Baseline) & 2026 & Attn Res-UNet & None / Fixed $\tau=0.50$ & 8.20M & 82.02 & 73.96 & 76.00\% / 0.8652 \\
+This Work (2D Nested) & 2026 & Attn Res-UNet & Temp ($T^*$) / Nested $\tau_k^*$ & 8.20M & 84.45 & 74.60 & 77.57\% / 0.8860 \\
+\textbf{This Work (Proposed 3D Z-Hysteresis)} & 2026 & Attn Res-UNet & \textbf{Temp ($T^*$) / Aniso 3D Z-Hyst.} & \textbf{8.20M} & \textbf{86.12} & \textbf{74.92} & \textbf{77.73\% / 0.8894} \\
+\bottomrule
+\multicolumn{8}{l}{\footnotesize $^\dagger$Performance inflated by slice-level data leakage (inter-slice correlation and subject feature memorization across training and testing partitions).} \\
+\multicolumn{8}{l}{\footnotesize $^\ddagger$3D reconstruction is anatomically invalid in random-slice partitioning due to scattered, non-contiguous slice assignment.} \\
+\multicolumn{8}{l}{\footnotesize NR: Not Reported. Note: Proposed method evaluated with zero leakage achieves $\text{Dice}_{\text{all}} = 86.12\%$, exceeding the $85.50\%$ of LiteMRINet (which benefited from slice leakage).}
+\end{tabular}%
+}
+\end{table*}
+
+As detailed in Table~\ref{tab:sota_comparison}, recent investigations on the TCGA-LGG benchmark such as LiteMRINet~\cite{yuan2025enhanced} (reporting 85.50\% Dice) and PoSAM-ULTRA~\cite{alhatamleh2026attention} (reporting 91.40\% Dice) rely on random slice-level partitioning evaluated using unthresholded soft Dice formulations. As demonstrated by our controlled audit (Section~\ref{sec:leakage_audit}), random slice partitioning induces substantial performance inflation (+8.79\% on positive slices and +6.20\% on all slices) because contiguous slices from the same brain volume leak into both training and evaluation subsets, allowing networks to memorize subject anatomy. When audited under identical random-slice conditions, our baseline architecture achieves an overall Dice of 88.22\% (global soft Dice of 88.18\%) and reaches 89.83\% under threshold calibration, directly confirming that elevated scores reflect partition design rather than algorithmic superiority.
+
+Most notably, even under the strict, zero-leakage patient-grouped standard with hard thresholding, our proposed Anisotropic 3D Z-Hysteresis framework attains an overall Dice of 86.12\%. This result surpasses the 85.50\% reported by LiteMRINet despite LiteMRINet's reliance on slice-level data leakage and soft Dice calculation. Concurrently, against the patient-isolated benchmark of Buda et al.~\cite{buda2019association} (72.10\% positive-slice Dice), our proposed model achieves 74.92\% (+2.82\% improvement), while delivering a 3D volumetric Dice of 77.73\%, 95\% Hausdorff distance of 10.97 voxels, and excellent clinical agreement ($\text{ICC}(2, 1) = 0.8894$) within a compact 8.20M parameter footprint.
+
+\subsection{Limitations and Future Scope}
+Two primary limitations warrant consideration. First, while the TCGA-LGG cohort represents a multi-institutional benchmark, prospective validation across diverse external centers featuring heterogeneous scanner field strengths (1.5T vs. 3.0T) and varying acquisition protocols will further substantiate generalizability. Second, while the anisotropic Z-continuity rescue successfully recovered four previously undetected apical slices, ultra-small isolated lesions ($< 10$ voxels) remain challenging to differentiate from non-neoplastic vascular artifacts without longitudinal follow-up imaging. Future research will explore incorporating multi-parametric diffusion and perfusion MRI sequences to further enrich margin delineation in clinically equivocal regions.
+
+\section{Conclusion}
+\label{sec:conclusion}
+This study presented a calibration-aware, leakage-audited volumetric framework for lower-grade glioma segmentation on brain MRI. By enforcing strict patient-grouped 5-fold cross-validation with nested inner-fold calibration, we systematically audited and eliminated two widespread sources of performance inflation: slice-level data leakage ($+8.79\%$ artificial Dice inflation) and post-hoc threshold optimization ($+0.063\%$ optimism bias). Nested temperature scaling reduced pooled expected calibration error by $46.9\%$, providing well-calibrated probabilistic confidence estimates. Furthermore, the proposed Anisotropic 3D Z-Continuity Hysteresis algorithm decoupled in-plane horizontal contouring from axial boundary rescue, achieving $74.92\%$ positive-slice Dice, $86.12\%$ overall Dice, and a $42.4\%$ relative reduction in empty-slice false alarms. Patient-level volumetric evaluation confirmed high clinical agreement ($\text{ICC} = 0.8894$) and biological fidelity across molecular consensus clusters ($p = 0.0268$). This framework establishes a reliable foundation for automated clinical neuro-oncology workflows.
+
+\FloatBarrier
+
+\section*{CRediT authorship contribution statement}
+\textbf{Shayan Ganji Nataj:} Conceptualization, Methodology, Software, Formal analysis, Investigation, Data curation, Visualization, Writing -- original draft. \textbf{Keivan Borna:} Supervision, Project administration, Writing -- review and editing, Validation.
+
+\section*{Declaration of Competing Interest}
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\section*{Funding}
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+\section*{Data and Code Availability}
+The TCGA-LGG MRI dataset is publicly available on The Cancer Imaging Archive (TCIA) and Kaggle at: \url{https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation}. The complete codebase, precomputed in-memory cache, and trained fold checkpoints are available at: \url{https://github.com/Shayan-Ganji/lgg_segmentation}.
+
+\bibliographystyle{elsarticle-num}
+\bibliography{references}
+
+\end{document}

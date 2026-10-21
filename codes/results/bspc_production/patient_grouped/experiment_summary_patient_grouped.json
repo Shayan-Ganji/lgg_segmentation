@@ -1,0 +1,45 @@
+{
+    "split_type": "patient_grouped",
+    "epochs": 100,
+    "base_filters": 32,
+    "total_elapsed_sec": 5207.95,
+    "mean_test_dice_all": 0.8206,
+    "mean_test_dice_pos": 0.7399,
+    "fold_details": [
+        {
+            "fold": 1,
+            "status": "resumed",
+            "test_dice_all": 0.8317308222643905,
+            "test_dice_pos": 0.7702479080001786,
+            "train_time_sec": 0.0
+        },
+        {
+            "fold": 2,
+            "best_val_dice": 0.5343330502510071,
+            "test_dice_all": 0.8522936150027931,
+            "test_dice_pos": 0.7495549644595821,
+            "train_time_sec": 1259.64
+        },
+        {
+            "fold": 3,
+            "best_val_dice": 0.5026561617851257,
+            "test_dice_all": 0.7659370591114328,
+            "test_dice_pos": 0.7939487197079267,
+            "train_time_sec": 1207.56
+        },
+        {
+            "fold": 4,
+            "best_val_dice": 0.5473849177360535,
+            "test_dice_all": 0.8450170859685957,
+            "test_dice_pos": 0.7043924240899463,
+            "train_time_sec": 1322.98
+        },
+        {
+            "fold": 5,
+            "best_val_dice": 0.638056218624115,
+            "test_dice_all": 0.8079272356404649,
+            "test_dice_pos": 0.6814666993502958,
+            "train_time_sec": 1391.42
+        }
+    ]
+}

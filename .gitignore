@@ -1,0 +1,82 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.ipynb_checkpoints/
+codes/notebooks/
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Large Dataset & Raw Images
+kaggle_3m/
+*.tif
+*.tiff
+*.png_cache/
+*.preprocessed/
+preprocessed_cache_*.npz
+
+# Large Archives & Compressed Bundles
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Model Weights & Heavy Checkpoints (>50MB)
+*.h5
+*.weights.h5
+*.hdf5
+*.ckpt*
+*.pb
+saved_model/
+
+# Large NumPy Arrays & Binary Cache (>50MB)
+*.npz
+*.npy
+*.pkl
+*.parquet
+
+# LaTeX Build Artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.spl
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Antigravity IDE Internal Memory & Reviewer Rejection Notes
+context.md
+code_changes.md
+# Previews & Temporary Test Renders
+preview_pages/
+preview_page_*.png
+paper_bspc_submission/preview_pages/
+paper_bspc_submission/preview_page_*.png
+context/
+Conference-LaTeX-template_10-17-19/
+csicc2026/
+Manuscript.pdf
+*نظرات*.pdf
+*.pdf.bak
+
