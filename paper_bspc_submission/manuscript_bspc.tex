@@ -1,4 +1,4 @@
-\documentclass[final,3p,twocolumn]{elsarticle}
+\documentclass[preprint,12pt]{elsarticle}
 
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
@@ -6,7 +6,7 @@
 \usepackage{xcolor}
 \usepackage{array}
 \usepackage{url}
-\providecommand{\FloatBarrier}{\par\clearpage}
+
 
 \journal{Biomedical Signal Processing and Control}
 
@@ -145,12 +145,12 @@ Q(I) = \frac{1}{2}\Big[\sigma\big(I - \mathcal{M}_{3\times 3}(I)\big) + \sigma\b
 \end{equation}
 representing the average standard deviation of high-frequency residuals under $3 \times 3$ median ($\mathcal{M}_{3\times 3}$) and Gaussian ($\mathcal{G}_{3\times 3}$) spatial filters. Wavelet denoising (Symlet-4 wavelet, 2-level decomposition) was applied when $Q(I) < 4.0$ ($3,738$ slices, $95.14\%$). Slices with high intrinsic contrast ($Q(I) \ge 4.0$, 191 slices, $4.86\%$) bypassed filtering to avoid unnecessary smoothing of delicate parenchymal boundaries. Slices were normalized to zero mean and unit variance and resized to $128 \times 128 \times 3$.
 
-\begin{figure*}[tbp]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.98\textwidth]{figures/fig_architecture_pipeline.pdf}
 \caption{End-to-end processing pipeline showing Quality-Aware Preprocessing (Stage 1), the Attention Res-UNet backbone with Group Normalization ($G=8$), GELU, Stochastic Depth, and Deep Supervision (Stage 2), followed by Nested Temperature Scaling ($T^* = 1.844$) and Anisotropic 3D Z-Continuity Hysteresis (Stage 3).}
 \label{fig:architecture_pipeline}
-\end{figure*}
+\end{figure}
 
 \section{Network Architecture and Nested Evaluation Protocol}
 \label{sec:methods}
@@ -295,17 +295,17 @@ $\text{FPR}_{\text{empty}}$ (\%) & 13.65 (349 / 2556) & 13.46 (317 / 2356) \\
 }
 \end{table}
 
-\begin{figure*}[tbp]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.98\textwidth]{figures/fig_reliability_diagram.pdf}
 \caption{Reliability diagrams with 15 probability bins and corresponding voxel frequency histograms. (a) Uncalibrated patient-grouped model exhibiting overconfidence error ($\text{ECE} = 0.369\%$). (b) Calibrated model via nested temperature scaling ($T^* = 1.844$), reducing pooled ECE by $46.9\%$ to $0.196\%$. (c) Data-leaked random-slice model showing memorized probabilities.}
 \label{fig:reliability_diagram}
-\end{figure*}
+\end{figure}
 
 \subsection{Nested Temperature Scaling and Thresholding}
 Table~\ref{tab:calibration_folds} presents fold-by-fold calibration and threshold optimization results. Fitted optimal temperatures ranged from $T^* = 1.520$ to $2.387$ (mean $T^* = 1.844$). On untouched test sets, temperature scaling consistently reduced NLL from $0.0230$ to $0.0154$ ($-32.9\%$) and Brier score from $0.00375$ to $0.00338$ ($-9.9\%$). The mean per-fold ECE decreased from $0.372\%$ to $0.254\%$ (a $31.7\%$ relative reduction), while pooled cohort ECE dropped from $0.369\%$ to $0.196\%$ (a $46.9\%$ relative reduction), visually confirmed in Figure~\ref{fig:reliability_diagram}. The corresponding training and validation convergence dynamics across folds are illustrated in Figure~\ref{fig:training_convergence}.
 
-\begin{table*}[tbp]
+\begin{table}[tbp]
 \centering
 \caption{Fold-by-fold nested calibration, threshold optimization, and out-of-fold performance.}
 \label{tab:calibration_folds}
@@ -327,14 +327,14 @@ Table~\ref{tab:calibration_folds} presents fold-by-fold calibration and threshol
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
+\end{table}
 
-\begin{figure*}[tbp]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.92\textwidth]{figures/fig_training_convergence.pdf}
 \caption{Training and validation convergence dynamics across 5 folds under identical training hyperparameters. (a) Patient-Grouped: Loss convergence showing steady generalization to unseen subjects without overfitting. (b) Patient-Grouped: Dice progression reaching stable plateau. (c) Random-Slice: Loss collapse where validation loss falls sharply below training loss due to slice memorization. (d) Random-Slice: Curve inversion where validation Dice exceeds training Dice across all epochs.}
 \label{fig:training_convergence}
-\end{figure*}
+\end{figure}
 
 \subsection{Quantification of Optimism Bias ($\Delta\text{Optimism}$)}
 \label{sec:optimism_bias}
@@ -354,7 +354,7 @@ While modest in magnitude, auditing this difference confirms that the reported g
 \subsection{Anisotropic 3D Z-Hysteresis Superiority}
 By decoupling in-plane binarization from axial margin rescue, the proposed 3D framework achieves superior performance across all evaluation dimensions simultaneously (Table~\ref{tab:method_comparison}). Specifically, $\text{Dice}_{\text{pos}}$ increases to $74.92\%$ [95\% CI: $70.82\%$--$78.39\%$], consistently outperforming both the 2D Baseline ($73.96\%$) and 2D Nested ($74.60\%$) models across all five folds. Simultaneously, overall accuracy across all slices ($\text{Dice}_{\text{all}}$) improves to $86.12\%$ [95\% CI: $84.32\%$--$87.75\%$], reflecting a $+4.10\%$ absolute boost over baseline. Furthermore, the false-positive rate on healthy slices ($\text{FPR}_{\text{empty}}$) declines from $13.65\%$ down to $7.86\%$ ($201 / 2,556$ slices), establishing a $42.4\%$ relative reduction in empty-slice false alarms.
 
-\begin{table*}[tbp]
+\begin{table}[tbp]
 \centering
 \caption{Comprehensive comparison of 2D Baseline, 2D Nested, and Proposed Anisotropic 3D Z-Hysteresis across all 3,929 out-of-fold test slices (10,000 bootstrap 95\% CIs).}
 \label{tab:method_comparison}
@@ -376,7 +376,7 @@ Slices Rescued from Zero & 0 / 220 & 0 / 220 & \textbf{4 / 220 (1.82\%)} & 4 api
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
+\end{table}
 
 Analysis of 220 boundary/margin slices revealed that mean boundary Dice improved from $29.68\%$ to $30.48\%$, with 4 margin slices previously completely missed ($\text{Dice} = 0.00\%$) rescued by axial propagation.
 
@@ -384,7 +384,7 @@ Analysis of 220 boundary/margin slices revealed that mean boundary Dice improved
 \label{sec:leakage_audit}
 Table~\ref{tab:leakage_audit} contrasts patient-grouped partitioning against random-slice partitioning under identical network architectures and loss formulations. As demonstrated by the empirical convergence dynamics (Figure~\ref{fig:training_convergence}(c)--(d)), random slice splitting leads to an unnatural loss collapse and curve inversion, where validation performance surpasses training performance because adjacent slices are shared across partitions.
 
-\begin{table*}[tbp]
+\begin{table}[tbp]
 \centering
 \caption{Systematic data leakage audit comparing patient-grouped against random-slice 5-fold cross-validation on the TCGA-LGG cohort.}
 \label{tab:leakage_audit}
@@ -403,16 +403,16 @@ Random-Slice (Conventional) & \textbf{Slice Memorization} & \textbf{82.74} & \te
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
+\end{table}
 
 Random slice splitting artificially inflated positive-slice Dice by \textbf{+8.79\%} (from $73.96\%$ to $82.74\%$) and overall Dice by \textbf{+6.20\%} (from $82.02\%$ to $88.22\%$). Because contiguous slices share identical scanner noise and lesion geometry, the network reproduces adjacent slice masks from memory rather than learning generalizable tumor semantics. Multi-scenario qualitative segmentation results across representative test slices are shown in Figure~\ref{fig:qualitative_panel}.
 
-\begin{figure*}[tbp]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.98\textwidth]{figures/fig_qualitative_3d_hysteresis.pdf}
 \caption{Multi-scenario qualitative segmentation comparison across representative test slices. Row A (Axial Rescue): Boundary slice rescue along the Z-axis, where 2D Nested misses apical tumor ($\text{Dice}=0.0\%$) while Anisotropic 3D Hysteresis restores detection ($\text{Dice}=67.2\%$). Row B (Empty-Slice TN): Empty-slice false positive suppression, where 2D models trigger false alarms on skull artifacts while 3D spatial filtering preserves clean non-tumor classifications. Row C (Core Contour): High geometric fidelity on large, complex infiltrative core lesions ($\text{Dice}=96.3\%$).}
 \label{fig:qualitative_panel}
-\end{figure*}
+\end{figure}
 
 \section{3D Volumetric Agreement and Radiogenomic Fidelity}
 \label{sec:radiogenomics}
@@ -420,7 +420,7 @@ Random slice splitting artificially inflated positive-slice Dice by \textbf{+8.7
 \subsection{Patient-Level 3D Surface and Volumetric Assessment}
 Individual 2D predictions were stacked into full 3D volumes across all 110 subjects. Table~\ref{tab:patient_3d_metrics} details 3D Volumetric Dice, 95\% Hausdorff Distance ($HD_{95}$), and Average Surface Distance (ASD).
 
-\begin{table*}[tbp]
+\begin{table}[tbp]
 \centering
 \caption{Patient-level 3D volumetric and surface boundary metrics across all 110 TCGA-LGG patients.}
 \label{tab:patient_3d_metrics}
@@ -436,11 +436,11 @@ Individual 2D predictions were stacked into full 3D volumes across all 110 subje
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
+\end{table}
 
 The proposed Anisotropic 3D Z-Hysteresis consistently outperforms both 2D baselines across all patient-level volumetric metrics. 3D Volumetric Dice reaches $77.73\% \pm 18.65\%$ with a median of $84.42\%$ (interquartile range [IQR]: $70.85\%$--$91.24\%$). Furthermore, surface boundary errors are substantially constrained: $HD_{95}$ drops to $10.97 \pm 18.28$ voxels (median: $2.24$, IQR: $1.00$--$12.03$), while ASD improves to $3.10 \pm 12.48$ voxels (median: $0.63$, IQR: $0.29$--$2.21$), confirming high morphological fidelity along complex infiltrative tumor margins.
 
-\begin{figure*}[tbp]
+\begin{figure}[tbp]
 \centering
 \begin{minipage}[b]{0.48\textwidth}
     \centering
@@ -455,7 +455,7 @@ The proposed Anisotropic 3D Z-Hysteresis consistently outperforms both 2D baseli
 \end{minipage}
 \caption{Clinical agreement and radiogenomic fidelity. (a) Bland-Altman agreement plot between automated 3D tumor volumes and radiologist ground truth across 110 patients (solid red line: mean bias $= +143.7$ voxels; dashed lines: $95\%$ limits of agreement). (b) Radiogenomic fidelity across molecular clusters (\textit{COCCluster}, $p < 0.05$) and WHO histologic grades (Grade II vs. III).}
 \label{fig:clinical_validation}
-\end{figure*}
+\end{figure}
 
 \subsection{Clinical Agreement and Bland-Altman Analysis}
 Agreement between automated 3D volumes and expert manual ground truth was evaluated using standardized clinical biostatistical tests (Figure~\ref{fig:clinical_validation}(a)). Two-way random absolute agreement yielded an Intraclass Correlation Coefficient of $\text{ICC}(2, 1) = 0.8894$, comfortably exceeding the established $0.85$ threshold for excellent clinical reproducibility~\cite{shrout1979intraclass}. Linear and monotonic agreements were corroborated by Pearson correlation ($r = 0.8886, p = 2.44 \times 10^{-38}$) and Spearman rank correlation ($\rho = 0.8819, p = 4.72 \times 10^{-37}$). Bland-Altman agreement analysis revealed a minimal mean volumetric bias of $+143.7$ voxels (accounting for under $1.5\%$ of mean lesion volume), with $95\%$ limits of agreement spanning $[-4{,}526.6, +4{,}814.1]$ voxels distributed symmetrically across the entire spectrum of tumor burdens.
@@ -484,7 +484,7 @@ closely matching ground truth measurements ($\text{COC 1: } 6{,}780.5 > \text{CO
 \subsection{Comparison with State-of-the-Art Literature}
 Table~\ref{tab:sota_comparison} benchmarks our results against published investigations evaluated strictly on the Buda et al. TCGA-LGG benchmark dataset~\cite{buda2019association}.
 
-\begin{table*}[tbp]
+\begin{table}[tbp]
 \centering
 \caption{Systematic benchmark comparison against published deep learning studies on the TCGA-LGG dataset, stratified by data partitioning protocol and evaluation metric scope.}
 \label{tab:sota_comparison}
@@ -511,7 +511,7 @@ This Work (2D Nested) & 2026 & Attn Res-UNet & Temp ($T^*$) / Nested $\tau_k^*$ 
 \multicolumn{8}{l}{\footnotesize NR: Not Reported. Note: Proposed method evaluated with zero leakage achieves $\text{Dice}_{\text{all}} = 86.12\%$, exceeding the $85.50\%$ of LiteMRINet (which benefited from slice leakage).}
 \end{tabular}%
 }
-\end{table*}
+\end{table}
 
 As detailed in Table~\ref{tab:sota_comparison}, recent investigations on the TCGA-LGG benchmark such as LiteMRINet~\cite{yuan2025enhanced} (reporting 85.50\% Dice) and PoSAM-ULTRA~\cite{alhatamleh2026attention} (reporting 91.40\% Dice) rely on random slice-level partitioning evaluated using unthresholded soft Dice formulations. As demonstrated by our controlled audit (Section~\ref{sec:leakage_audit}), random slice partitioning induces substantial performance inflation (+8.79\% on positive slices and +6.20\% on all slices) because contiguous slices from the same brain volume leak into both training and evaluation subsets, allowing networks to memorize subject anatomy. When audited under identical random-slice conditions, our baseline architecture achieves an overall Dice of 88.22\% (global soft Dice of 88.18\%) and reaches 89.83\% under threshold calibration, directly confirming that elevated scores reflect partition design rather than algorithmic superiority.
 
@@ -524,7 +524,7 @@ Two primary limitations warrant consideration. First, while the TCGA-LGG cohort 
 \label{sec:conclusion}
 This study presented a calibration-aware, leakage-audited volumetric framework for lower-grade glioma segmentation on brain MRI. By enforcing strict patient-grouped 5-fold cross-validation with nested inner-fold calibration, we systematically audited and eliminated two widespread sources of performance inflation: slice-level data leakage ($+8.79\%$ artificial Dice inflation) and post-hoc threshold optimization ($+0.063\%$ optimism bias). Nested temperature scaling reduced pooled expected calibration error by $46.9\%$, providing well-calibrated probabilistic confidence estimates. Furthermore, the proposed Anisotropic 3D Z-Continuity Hysteresis algorithm decoupled in-plane horizontal contouring from axial boundary rescue, achieving $74.92\%$ positive-slice Dice, $86.12\%$ overall Dice, and a $42.4\%$ relative reduction in empty-slice false alarms. Patient-level volumetric evaluation confirmed high clinical agreement ($\text{ICC} = 0.8894$) and biological fidelity across molecular consensus clusters ($p = 0.0268$). This framework establishes a reliable foundation for automated clinical neuro-oncology workflows.
 
-\FloatBarrier
+
 
 \section*{CRediT authorship contribution statement}
 \textbf{Shayan Ganji Nataj:} Conceptualization, Methodology, Software, Formal analysis, Investigation, Data curation, Visualization, Writing -- original draft. \textbf{Keivan Borna:} Supervision, Project administration, Writing -- review and editing, Validation.
