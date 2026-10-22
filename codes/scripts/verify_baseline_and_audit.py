@@ -1,18 +1,7 @@
 """
-=============================================================================
-BSPC Journal Phase 3: Step 1 - Baseline Verification & Cohort Screening Audit
-=============================================================================
-Performs:
-  1. Full integrity verification of all 20 NPZ files (10 val + 10 test)
-     in both patient_grouped and random_slice protocols.
-  2. Baseline performance evaluation (tau = 0.50) on:
-     - Full Cohort (3,929 slices)
-     - Screened Cohort (3,729 slices, excluding 200 artifact slices)
-     with 10,000 Patient-Level Clustered Bootstrap 95% Confidence Intervals.
-  3. Comprehensive breakdown of the 200 artifact-flagged slices
-     (Addressing Reviewer 5 comments in full detail).
-=============================================================================
+Baseline metrics verification and cohort screening audit.
 """
+
 
 import os
 import sys

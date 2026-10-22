@@ -1,5 +1,6 @@
 \documentclass[preprint,12pt]{elsarticle}
 
+\usepackage[a4paper, margin=2.2cm]{geometry}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -177,7 +178,7 @@ with linear decay rates $p \in [0.00, 0.05, 0.10, 0.15]$ in the encoder stages a
 
 In the decoder, additive attention gates~\cite{oktay2018attention} dynamically recalibrate intermediate feature representations before concatenation. Given spatial features $x^l$ and gating signal $g$, attention coefficients $\alpha^l \in [0, 1]$ are obtained via:
 \begin{equation}
-\alpha^l = \sigma\left(\psi^T \left(\text{ReLU}\left(W_x^T x^l + W_g^T g + b_g\right)\right) + b_\psi\right)
+\alpha^l = \sigma\left(\psi^T \left(\text{GELU}\left(W_x^T x^l + W_g^T g + b_g\right)\right) + b_\psi\right)
 \end{equation}
 where linear projections $W_x$ and $W_g$ align channel dimensions, and $\sigma$ denotes the sigmoid activation. This gating suppresses background noise in peripheral brain regions while amplifying infiltrative tumor signals. Deep supervision auxiliary heads at decoders 2 and 3 provide intermediate gradients during backpropagation. The final network comprises exactly 8.20 million trainable parameters (8,202,005 parameters).
 
@@ -298,7 +299,7 @@ $\text{FPR}_{\text{empty}}$ (\%) & 13.65 (349 / 2556) & 13.46 (317 / 2356) \\
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.98\textwidth]{figures/fig_reliability_diagram.pdf}
-\caption{Reliability diagrams with 15 probability bins and corresponding voxel frequency histograms. (a) Uncalibrated patient-grouped model exhibiting overconfidence error ($\text{ECE} = 0.369\%$). (b) Calibrated model via nested temperature scaling ($T^* = 1.844$), reducing pooled ECE by $46.9\%$ to $0.196\%$. (c) Data-leaked random-slice model showing memorized probabilities.}
+\caption{Probability calibration and voxel confidence dynamics across 15 probability bins. (a) Reliability diagram comparing the uncalibrated patient-grouped model ($\text{ECE} = 0.369\%$), the temperature-calibrated model ($T^* = 1.844$, reducing pooled ECE by $46.9\%$ to $0.196\%$), and the data-leaked random-slice model against ideal diagonal calibration. (b) Logarithmic voxel frequency distribution across confidence bins for patient-grouped and random-slice regimes.}
 \label{fig:reliability_diagram}
 \end{figure}
 
@@ -420,7 +421,7 @@ Random slice splitting artificially inflated positive-slice Dice by \textbf{+8.7
 \subsection{Patient-Level 3D Surface and Volumetric Assessment}
 Individual 2D predictions were stacked into full 3D volumes across all 110 subjects. Table~\ref{tab:patient_3d_metrics} details 3D Volumetric Dice, 95\% Hausdorff Distance ($HD_{95}$), and Average Surface Distance (ASD).
 
-\begin{table}[tbp]
+\begin{table}[!t]
 \centering
 \caption{Patient-level 3D volumetric and surface boundary metrics across all 110 TCGA-LGG patients.}
 \label{tab:patient_3d_metrics}
@@ -440,28 +441,26 @@ Individual 2D predictions were stacked into full 3D volumes across all 110 subje
 
 The proposed Anisotropic 3D Z-Hysteresis consistently outperforms both 2D baselines across all patient-level volumetric metrics. 3D Volumetric Dice reaches $77.73\% \pm 18.65\%$ with a median of $84.42\%$ (interquartile range [IQR]: $70.85\%$--$91.24\%$). Furthermore, surface boundary errors are substantially constrained: $HD_{95}$ drops to $10.97 \pm 18.28$ voxels (median: $2.24$, IQR: $1.00$--$12.03$), while ASD improves to $3.10 \pm 12.48$ voxels (median: $0.63$, IQR: $0.29$--$2.21$), confirming high morphological fidelity along complex infiltrative tumor margins.
 
-\begin{figure}[tbp]
+\begin{figure}[!t]
 \centering
-\begin{minipage}[b]{0.48\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figures/fig_bland_altman_volume.pdf}
-    \centerline{\small (a) Bland-Altman 3D Volume Agreement Plot.}
-\end{minipage}
-\hfill
-\begin{minipage}[b]{0.48\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figures/fig_radiogenomic_fidelity.pdf}
-    \centerline{\small (b) Radiogenomic and Histological Stratification.}
-\end{minipage}
-\caption{Clinical agreement and radiogenomic fidelity. (a) Bland-Altman agreement plot between automated 3D tumor volumes and radiologist ground truth across 110 patients (solid red line: mean bias $= +143.7$ voxels; dashed lines: $95\%$ limits of agreement). (b) Radiogenomic fidelity across molecular clusters (\textit{COCCluster}, $p < 0.05$) and WHO histologic grades (Grade II vs. III).}
-\label{fig:clinical_validation}
+\includegraphics[width=\textwidth]{figures/fig_clinical_volume_agreement.pdf}
+\caption{Clinical 3D volumetric agreement and calibration analysis across 110 patients. (a) Volumetric correlation and linear regression fit between automated 3D predictions and radiologist ground truth ($\mathrm{ICC}(2, 1) = 0.8894$, Pearson $r = 0.8886, p = 2.44 \times 10^{-38}$, Spearman $\rho = 0.8819$). (b) Bland-Altman agreement plot with minimal mean bias ($+143.7$ voxels, under $1.5\%$ of mean lesion volume) and $95\%$ limits of agreement $[-4{,}526.6, +4{,}814.1]$ voxels.}
+\label{fig:clinical_agreement}
 \end{figure}
 
 \subsection{Clinical Agreement and Bland-Altman Analysis}
-Agreement between automated 3D volumes and expert manual ground truth was evaluated using standardized clinical biostatistical tests (Figure~\ref{fig:clinical_validation}(a)). Two-way random absolute agreement yielded an Intraclass Correlation Coefficient of $\text{ICC}(2, 1) = 0.8894$, comfortably exceeding the established $0.85$ threshold for excellent clinical reproducibility~\cite{shrout1979intraclass}. Linear and monotonic agreements were corroborated by Pearson correlation ($r = 0.8886, p = 2.44 \times 10^{-38}$) and Spearman rank correlation ($\rho = 0.8819, p = 4.72 \times 10^{-37}$). Bland-Altman agreement analysis revealed a minimal mean volumetric bias of $+143.7$ voxels (accounting for under $1.5\%$ of mean lesion volume), with $95\%$ limits of agreement spanning $[-4{,}526.6, +4{,}814.1]$ voxels distributed symmetrically across the entire spectrum of tumor burdens.
+Agreement between automated 3D volumes and expert manual ground truth was evaluated using standardized clinical biostatistical tests (Figure~\ref{fig:clinical_agreement}). Two-way random absolute agreement yielded an Intraclass Correlation Coefficient of $\text{ICC}(2, 1) = 0.8894$, comfortably exceeding the established $0.85$ threshold for excellent clinical reproducibility~\cite{shrout1979intraclass}. Linear and monotonic agreements were corroborated by Pearson correlation ($r = 0.8886, p = 2.44 \times 10^{-38}$) and Spearman rank correlation ($\rho = 0.8819, p = 4.72 \times 10^{-37}$). Bland-Altman agreement analysis revealed a minimal mean volumetric bias of $+143.7$ voxels (accounting for under $1.5\%$ of mean lesion volume), with $95\%$ limits of agreement spanning $[-4{,}526.6, +4{,}814.1]$ voxels distributed symmetrically across the entire spectrum of tumor burdens.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_radiogenomic_fidelity.pdf}
+\caption{Downstream radiogenomic fidelity and histological stratification with clinical records. (a) 3D tumor sphericity across WHO histologic grades (Grade II vs. Grade III). (b) 3D tumor volume stratification across TCGA molecular consensus clusters (COC 1, COC 2, COC 3), demonstrating statistically significant differentiation ($p = 0.0268$) with exact biological rank ordering preservation.}
+\label{fig:radiogenomic_fidelity}
+\end{figure}
 
 \subsection{Radiogenomic Stratification with Clinical Data}
-To verify whether automated segmentations support downstream clinical biomarker extraction, we tested whether predicted 3D shapes reproduce biological associations established in neuro-oncology (Figure~\ref{fig:clinical_validation}(b)):
+To verify whether automated segmentations support downstream clinical biomarker extraction, we tested whether predicted 3D shapes reproduce biological associations established in neuro-oncology (Figure~\ref{fig:radiogenomic_fidelity}):
+
 
 \subsubsection{WHO Histologic Grade Differentiation (Grade II vs. III)}
 In clinical neuro-oncology, diffuse LGG grade is governed by mitotic activity and cellular atypia rather than macroscopic tumor burden. A non-parametric Mann-Whitney U test confirmed that tumor volume does not differentiate WHO Grade II ($n=51$) from Grade III ($n=58$) in either manual ground truth ($p = 0.8104$; Grade II: $5{,}928.3$ voxels; Grade III: $6{,}120.2$ voxels) or model predictions ($p = 0.8151$; Grade II: $6{,}241.8$ voxels; Grade III: $6{,}125.9$ voxels). Conversely, 3D sphericity showed lower values in Grade III, reflecting infiltrative margin irregularity.
@@ -484,15 +483,15 @@ closely matching ground truth measurements ($\text{COC 1: } 6{,}780.5 > \text{CO
 \subsection{Comparison with State-of-the-Art Literature}
 Table~\ref{tab:sota_comparison} benchmarks our results against published investigations evaluated strictly on the Buda et al. TCGA-LGG benchmark dataset~\cite{buda2019association}.
 
-\begin{table}[tbp]
+\begin{table}[!t]
 \centering
 \caption{Systematic benchmark comparison against published deep learning studies on the TCGA-LGG dataset, stratified by data partitioning protocol and evaluation metric scope.}
 \label{tab:sota_comparison}
-\setlength{\tabcolsep}{4pt}
+\setlength{\tabcolsep}{4.5pt}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lccccccc}
 \toprule
-\textbf{Study} & \textbf{Year} & \textbf{Architecture} & \textbf{Post-Processing / Calibration} & \textbf{Params} & \textbf{Overall $\text{Dice}_{\text{all}}$ (\%)} & \textbf{Tumor $\text{Dice}_{\text{pos}}$ (\%)} & \textbf{3D Volumetric Dice / ICC} \\
+\textbf{Study} & \textbf{Year} & \textbf{Architecture} & \shortstack{\textbf{Post-Processing} \\ \textbf{/ Calibration}} & \textbf{Params} & \shortstack{\textbf{Overall} \\ $\mathbf{\text{Dice}_{\text{all}}}$ \textbf{(\%)}} & \shortstack{\textbf{Tumor} \\ $\mathbf{\text{Dice}_{\text{pos}}}$ \textbf{(\%)}} & \shortstack{\textbf{3D Volumetric} \\ \textbf{Dice / ICC}} \\
 \midrule
 \multicolumn{8}{l}{\textit{\textbf{Part A: Random-Slice Partitioning (Data-Leaked Regime)}}} \\
 LiteMRINet~\cite{yuan2025enhanced} & 2025 & LiteMRINet & None / None & 1.61M & 85.50 (Soft)$^\dagger$ & NR & NR \\
@@ -506,11 +505,15 @@ This Work (2D Baseline) & 2026 & Attn Res-UNet & None / Fixed $\tau=0.50$ & 8.20
 This Work (2D Nested) & 2026 & Attn Res-UNet & Temp ($T^*$) / Nested $\tau_k^*$ & 8.20M & 84.45 & 74.60 & 77.57\% / 0.8860 \\
 \textbf{This Work (Proposed 3D Z-Hysteresis)} & 2026 & Attn Res-UNet & \textbf{Temp ($T^*$) / Aniso 3D Z-Hyst.} & \textbf{8.20M} & \textbf{86.12} & \textbf{74.92} & \textbf{77.73\% / 0.8894} \\
 \bottomrule
-\multicolumn{8}{l}{\footnotesize $^\dagger$Performance inflated by slice-level data leakage (inter-slice correlation and subject feature memorization across training and testing partitions).} \\
-\multicolumn{8}{l}{\footnotesize $^\ddagger$3D reconstruction is anatomically invalid in random-slice partitioning due to scattered, non-contiguous slice assignment.} \\
-\multicolumn{8}{l}{\footnotesize NR: Not Reported. Note: Proposed method evaluated with zero leakage achieves $\text{Dice}_{\text{all}} = 86.12\%$, exceeding the $85.50\%$ of LiteMRINet (which benefited from slice leakage).}
 \end{tabular}%
 }
+\\[4pt]
+\begin{minipage}{\textwidth}
+\footnotesize
+$^\dagger$Performance inflated by slice-level data leakage (inter-slice correlation and subject feature memorization across training and testing partitions).\\[2pt]
+$^\ddagger$3D reconstruction is anatomically invalid in random-slice partitioning due to scattered, non-contiguous slice assignment.\\[2pt]
+\textbf{NR}: Not Reported. \textbf{Note}: Proposed method evaluated with zero leakage achieves $\text{Dice}_{\text{all}} = 86.12\%$, exceeding the $85.50\%$ of LiteMRINet (which benefited from slice leakage).
+\end{minipage}
 \end{table}
 
 As detailed in Table~\ref{tab:sota_comparison}, recent investigations on the TCGA-LGG benchmark such as LiteMRINet~\cite{yuan2025enhanced} (reporting 85.50\% Dice) and PoSAM-ULTRA~\cite{alhatamleh2026attention} (reporting 91.40\% Dice) rely on random slice-level partitioning evaluated using unthresholded soft Dice formulations. As demonstrated by our controlled audit (Section~\ref{sec:leakage_audit}), random slice partitioning induces substantial performance inflation (+8.79\% on positive slices and +6.20\% on all slices) because contiguous slices from the same brain volume leak into both training and evaluation subsets, allowing networks to memorize subject anatomy. When audited under identical random-slice conditions, our baseline architecture achieves an overall Dice of 88.22\% (global soft Dice of 88.18\%) and reaches 89.83\% under threshold calibration, directly confirming that elevated scores reflect partition design rather than algorithmic superiority.
@@ -524,8 +527,6 @@ Two primary limitations warrant consideration. First, while the TCGA-LGG cohort 
 \label{sec:conclusion}
 This study presented a calibration-aware, leakage-audited volumetric framework for lower-grade glioma segmentation on brain MRI. By enforcing strict patient-grouped 5-fold cross-validation with nested inner-fold calibration, we systematically audited and eliminated two widespread sources of performance inflation: slice-level data leakage ($+8.79\%$ artificial Dice inflation) and post-hoc threshold optimization ($+0.063\%$ optimism bias). Nested temperature scaling reduced pooled expected calibration error by $46.9\%$, providing well-calibrated probabilistic confidence estimates. Furthermore, the proposed Anisotropic 3D Z-Continuity Hysteresis algorithm decoupled in-plane horizontal contouring from axial boundary rescue, achieving $74.92\%$ positive-slice Dice, $86.12\%$ overall Dice, and a $42.4\%$ relative reduction in empty-slice false alarms. Patient-level volumetric evaluation confirmed high clinical agreement ($\text{ICC} = 0.8894$) and biological fidelity across molecular consensus clusters ($p = 0.0268$). This framework establishes a reliable foundation for automated clinical neuro-oncology workflows.
 
-
-
 \section*{CRediT authorship contribution statement}
 \textbf{Shayan Ganji Nataj:} Conceptualization, Methodology, Software, Formal analysis, Investigation, Data curation, Visualization, Writing -- original draft. \textbf{Keivan Borna:} Supervision, Project administration, Writing -- review and editing, Validation.
 
@@ -538,7 +539,11 @@ This research did not receive any specific grant from funding agencies in the pu
 \section*{Data and Code Availability}
 The TCGA-LGG MRI dataset is publicly available on The Cancer Imaging Archive (TCIA) and Kaggle at: \url{https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation}. The complete codebase, precomputed in-memory cache, and trained fold checkpoints are available at: \url{https://github.com/Shayan-Ganji/lgg_segmentation}.
 
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+During the preparation of this work, the authors used AI-assisted tools solely for language editing, grammatical polishing, and code debugging assistance. All experimental designs, mathematical formulations, statistical audits, and scientific interpretations were conducted by the authors. After using these tools, the authors reviewed and edited the content as needed and take full responsibility for the content of the published article.
+
 \bibliographystyle{elsarticle-num}
 \bibliography{references}
+
 
 \end{document}

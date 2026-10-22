@@ -1,12 +1,7 @@
 """
-Publication-Quality Qualitative Segmentation Comparison Figure
-==============================================================
-Generates fig_qualitative_3d_hysteresis.pdf and .png at 300 DPI.
-Demonstrating:
-  - Row 1: Scenario A: Boundary Slice Rescue along Z-axis (2D misses, 3D rescues)
-  - Row 2: Scenario B: Empty-Slice False Positive Suppression (2D false alarm, 3D cleans)
-  - Row 3: Scenario C: Accurate Core Delineation (large complex tumor boundary comparison)
+Generates qualitative segmentation comparison across representative test slices.
 """
+
 
 import os
 import numpy as np
@@ -143,8 +138,9 @@ for row_idx, sc in enumerate(scenarios):
     ax0 = axes[row_idx, 0]
     ax0.imshow(img_display)
     if row_idx == 0:
-        ax0.set_title(col_titles[0], fontweight="bold")
+        ax0.set_title(col_titles[0], fontweight="bold", pad=8)
     ax0.set_ylabel(row_labels[row_idx], fontsize=9.5, fontweight="bold", labelpad=10)
+    ax0.set_xlabel("Normalized Input", fontsize=9.0, color="#424242", labelpad=5)
     ax0.set_xticks([])
     ax0.set_yticks([])
 
@@ -153,12 +149,10 @@ for row_idx, sc in enumerate(scenarios):
     overlay_gt = overlay_mask(img_display, y_true, COLOR_GT)
     ax1.imshow(overlay_gt)
     if row_idx == 0:
-        ax1.set_title(col_titles[1], fontweight="bold")
+        ax1.set_title(col_titles[1], fontweight="bold", pad=8)
     gt_px = int(np.sum(y_true))
-    txt_gt = f"GT: {gt_px} px" if gt_px > 0 else "GT: Empty"
-    ax1.text(0.04, 0.94, txt_gt, transform=ax1.transAxes, color="white", va="top",
-             bbox=dict(facecolor="black", alpha=0.75, edgecolor="none", boxstyle="round,pad=0.25"),
-             fontsize=9, fontweight="bold")
+    txt_gt = f"GT: {gt_px} px" if gt_px > 0 else "GT: 0 px (Empty)"
+    ax1.set_xlabel(txt_gt, fontsize=9.2, fontweight="bold", color="#1b5e20", labelpad=5)
     ax1.set_xticks([])
     ax1.set_yticks([])
 
@@ -167,10 +161,8 @@ for row_idx, sc in enumerate(scenarios):
     overlay_b = overlay_mask(img_display, y_base, COLOR_BASE)
     ax2.imshow(overlay_b)
     if row_idx == 0:
-        ax2.set_title(col_titles[2], fontweight="bold")
-    ax2.text(0.04, 0.94, sc["desc_base"], transform=ax2.transAxes, color="white", va="top",
-             bbox=dict(facecolor=COLOR_BASE, alpha=0.85, edgecolor="none", boxstyle="round,pad=0.25"),
-             fontsize=9, fontweight="bold")
+        ax2.set_title(col_titles[2], fontweight="bold", pad=8)
+    ax2.set_xlabel(sc["desc_base"], fontsize=9.2, fontweight="bold", color="#b71c1c", labelpad=5)
     ax2.set_xticks([])
     ax2.set_yticks([])
 
@@ -179,10 +171,8 @@ for row_idx, sc in enumerate(scenarios):
     overlay_n = overlay_mask(img_display, y_nest, COLOR_NEST)
     ax3.imshow(overlay_n)
     if row_idx == 0:
-        ax3.set_title(col_titles[3], fontweight="bold")
-    ax3.text(0.04, 0.94, sc["desc_nest"], transform=ax3.transAxes, color="black", va="top",
-             bbox=dict(facecolor=COLOR_NEST, alpha=0.85, edgecolor="none", boxstyle="round,pad=0.25"),
-             fontsize=9, fontweight="bold")
+        ax3.set_title(col_titles[3], fontweight="bold", pad=8)
+    ax3.set_xlabel(sc["desc_nest"], fontsize=9.2, fontweight="bold", color="#e65100", labelpad=5)
     ax3.set_xticks([])
     ax3.set_yticks([])
 
@@ -191,12 +181,11 @@ for row_idx, sc in enumerate(scenarios):
     overlay_h = overlay_mask(img_display, y_hyst, COLOR_HYST)
     ax4.imshow(overlay_h)
     if row_idx == 0:
-        ax4.set_title(col_titles[4], fontweight="bold")
-    ax4.text(0.04, 0.94, sc["desc_hyst"], transform=ax4.transAxes, color="black", va="top",
-             bbox=dict(facecolor=COLOR_HYST, alpha=0.90, edgecolor="none", boxstyle="round,pad=0.25"),
-             fontsize=9, fontweight="bold")
+        ax4.set_title(col_titles[4], fontweight="bold", pad=8)
+    ax4.set_xlabel(sc["desc_hyst"], fontsize=9.2, fontweight="bold", color="#006064", labelpad=5)
     ax4.set_xticks([])
     ax4.set_yticks([])
+
 
 # Add comprehensive bottom legend
 legend_elements = [

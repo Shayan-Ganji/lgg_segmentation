@@ -1,15 +1,7 @@
 """
-=============================================================================
-BSPC Journal Pipeline: CPU Sanity Check & Verification Script
-Validates:
-  1. Numeric Z-axis sorting
-  2. Integration with data.csv
-  3. Matched split generation (patient_grouped vs random_slice)
-  4. End-to-end forward/backward pass on CPU (2 epochs, 2 patients)
-  5. .npz export containing raw float32 logits, probs, targets, IDs, and slice indices
-  6. Temperature scaling numerical stability test
-=============================================================================
+Sanity check and integration test script.
 """
+
 
 import os
 import sys

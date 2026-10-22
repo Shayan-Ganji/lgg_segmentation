@@ -1,25 +1,7 @@
 """
-=============================================================================
-BSPC Journal Phase 3: Step 4 - 3D Clinical Radiomics & Genomic Fidelity
-=============================================================================
-Performs:
-  1. 3D Volumetric & Surface Metrics across all 110 patients:
-     - 3D Volumetric Dice
-     - 95th Percentile Hausdorff Distance (HD95 in voxels)
-     - Average Surface Distance (ASD)
-     - 3D Precision & Recall
-     - Patient-level & Slice-level Lesion Detection Sensitivity & Specificity
-  2. Clinical Tumor Volume Agreement & Agreement Analysis:
-     - Two-way random absolute agreement ICC(2, 1)
-     - Pearson r and Spearman rho correlations
-     - Bland-Altman analysis and publication plot (fig_bland_altman_volume.pdf/.png)
-  3. Downstream Radiogenomic & Histological Fidelity with data.csv:
-     - 3D shape features: Volume, Surface Area, Surface-to-Volume Ratio (SVR), Sphericity
-     - Statistical comparison for Grade II vs Grade III (Mann-Whitney U test)
-     - Statistical comparison across Molecular Subtypes (COCCluster, Kruskal-Wallis)
-     - Publication plot (fig_radiogenomic_fidelity.pdf/.png)
-=============================================================================
+3D volumetric evaluation, Bland-Altman agreement, and radiogenomic stratification.
 """
+
 
 import os
 import sys
@@ -146,45 +128,78 @@ def compute_icc_21(x, y):
     return float(icc)
 
 
-def plot_bland_altman(v_true, v_pred):
+def plot_clinical_volume_agreement(v_true, v_pred):
     """
-    Plots clinical Bland-Altman agreement plot with mean bias and 95% limits of agreement.
+    Figure 6: Professional 2-Panel Clinical Volumetric Agreement Figure:
+      Panel (a): Linear regression & scatter (GT vs Model, ICC=0.8894, r=0.8886) with y=x and fit line.
+      Panel (b): Bland-Altman agreement plot with mean bias (+143.7) and 95% LoA.
     """
-    mean_v = (v_true + v_pred) / 2.0
-    diff_v = v_pred - v_true  # Error (Predicted - Ground Truth)
+    import matplotlib.ticker as ticker
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 4.8))
 
+    # Panel (a): Correlation & Regression
+    m, c = np.polyfit(v_true, v_pred, 1)
+    r, p_pearson = pearsonr(v_true, v_pred)
+    icc21 = compute_icc_21(v_true, v_pred)
+
+    max_v = max(float(np.max(v_true)), float(np.max(v_pred))) * 1.05
+    x_line = np.linspace(0, max_v, 100)
+
+    ax1.scatter(v_true, v_pred, color="#2b83ba", edgecolors="k", s=38, alpha=0.75, label="Patients ($n=110$)")
+    ax1.plot(x_line, x_line, "k--", linewidth=1.5, label="Identity Line ($y = x$)")
+    ax1.plot(x_line, m * x_line + c, color="#d7191c", linewidth=2.0,
+             label=f"Regression: $y = {m:.2f}x {c:+.1f}$")
+
+    ax1.text(0.05, 0.92,
+             f"$\\mathrm{{ICC}}(2, 1) = {icc21:.4f}$\n"
+             f"Pearson $r = {r:.4f}$ ($p < 10^{{-30}}$)\n"
+             f"Spearman $\\rho = 0.8819$",
+             transform=ax1.transAxes, fontsize=8.8, va="top",
+             bbox=dict(facecolor="#f7f9fa", edgecolor="#b0bec5", boxstyle="round,pad=0.4", alpha=0.92))
+
+    ax1.set_xlabel("Radiologist Ground Truth 3D Volume (voxels)", fontweight="bold", labelpad=8)
+    ax1.set_ylabel("Proposed 3D Model Volume (voxels)", fontweight="bold", labelpad=8)
+    ax1.set_title("(a) Volumetric Correlation & Linear Fit", fontweight="bold", pad=10)
+    ax1.set_xlim(-500, max_v)
+    ax1.set_ylim(-500, max_v)
+    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x*1e-3):d}k" if x >= 1000 else f"{int(x):d}"))
+    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x*1e-3):d}k" if x >= 1000 else f"{int(x):d}"))
+    ax1.legend(loc="lower right", frameon=True, framealpha=0.92, fontsize=8.2)
+
+    # Panel (b): Bland-Altman Agreement
+    mean_v = (v_true + v_pred) / 2.0
+    diff_v = v_pred - v_true
     mean_diff = float(np.mean(diff_v))
     std_diff = float(np.std(diff_v, ddof=1))
     loa_upper = mean_diff + 1.96 * std_diff
     loa_lower = mean_diff - 1.96 * std_diff
 
-    fig, ax = plt.subplots(figsize=(7.2, 5.0))
+    ax2.scatter(mean_v, diff_v, color="#2b83ba", edgecolors="k", s=38, alpha=0.75, label="Patients ($n=110$)")
+    ax2.axhline(mean_diff, color="#d7191c", linestyle="-", linewidth=2.0,
+                label=f"Mean Bias = {mean_diff:+.1f} voxels")
+    ax2.axhline(loa_upper, color="#fdae61", linestyle="--", linewidth=1.8,
+                label=f"Upper 95% LoA = {loa_upper:+.1f}")
+    ax2.axhline(loa_lower, color="#fdae61", linestyle="--", linewidth=1.8,
+                label=f"Lower 95% LoA = {loa_lower:+.1f}")
+    ax2.axhline(0, color="gray", linestyle=":", linewidth=1.2, alpha=0.8)
 
-    ax.scatter(mean_v, diff_v, color="#2b83ba", alpha=0.75, edgecolors="k", s=40, label="Patients (n=110)")
-    ax.axhline(mean_diff, color="#d7191c", linestyle="-", linewidth=2.0,
-               label=f"Mean Bias = {mean_diff:+.1f} voxels")
-    ax.axhline(loa_upper, color="#fdae61", linestyle="--", linewidth=1.8,
-               label=f"Upper 95% LoA = {loa_upper:+.1f}")
-    ax.axhline(loa_lower, color="#fdae61", linestyle="--", linewidth=1.8,
-               label=f"Lower 95% LoA = {loa_lower:+.1f}")
-    ax.axhline(0, color="gray", linestyle=":", linewidth=1.2, alpha=0.8)
+    ax2.set_xlabel(r"Mean 3D Volume: $\frac{V_{\mathrm{Radiologist}} + V_{\mathrm{Model}}}{2}$ (voxels)", fontweight="bold", labelpad=8)
+    ax2.set_ylabel(r"Difference: $V_{\mathrm{Model}} - V_{\mathrm{Radiologist}}$ (voxels)", fontweight="bold", labelpad=8)
+    ax2.set_title("(b) Bland-Altman Volumetric Agreement", fontweight="bold", pad=10)
+    ax2.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x*1e-3):d}k" if x >= 1000 else f"{int(x):d}"))
+    ax2.legend(loc="upper right", frameon=True, framealpha=0.92, fontsize=8.0)
 
-    ax.set_xlabel(r"Mean 3D Tumor Volume: $\frac{V_{\mathrm{Radiologist}} + V_{\mathrm{Model}}}{2}$ (voxels)")
-    ax.set_ylabel(r"Volume Difference: $V_{\mathrm{Model}} - V_{\mathrm{Radiologist}}$ (voxels)")
-    ax.set_title("Bland-Altman Agreement of 3D Volumetric Segmentation", pad=10, fontsize=10.5, fontweight="bold")
-    ax.legend(loc="upper right", frameon=True, framealpha=0.92, fontsize=8.0)
-
-    plt.tight_layout(pad=1.2)
-    pdf_path = os.path.join(FIG_DIR, "fig_bland_altman_volume.pdf")
-    png_path = os.path.join(FIG_DIR, "fig_bland_altman_volume.png")
+    plt.tight_layout(pad=1.4)
+    pdf_path = os.path.join(FIG_DIR, "fig_clinical_volume_agreement.pdf")
+    png_path = os.path.join(FIG_DIR, "fig_clinical_volume_agreement.png")
     fig.savefig(pdf_path)
     fig.savefig(png_path)
 
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
-    fig.savefig(os.path.join(sub_dir, "fig_bland_altman_volume.pdf"))
-    fig.savefig(os.path.join(sub_dir, "fig_bland_altman_volume.png"))
+    fig.savefig(os.path.join(sub_dir, "fig_clinical_volume_agreement.pdf"))
+    fig.savefig(os.path.join(sub_dir, "fig_clinical_volume_agreement.png"))
     plt.close(fig)
-    print(f"[OK] Saved Bland-Altman Plot to:\n     {pdf_path}")
+    print(f"[OK] Saved Clinical Volume Agreement (Figure 6) to:\n     {pdf_path}")
 
     return {
         "mean_bias": mean_diff,
@@ -196,45 +211,49 @@ def plot_bland_altman(v_true, v_pred):
 
 def plot_radiogenomic_fidelity(df_clinical_patients):
     """
-    Plots 2-panel radiogenomic fidelity plot:
-    Panel A: Sphericity across WHO Grade II vs Grade III (Ground Truth vs Model).
-    Panel B: 3D Tumor Volume across Molecular Subtypes (COCCluster 1, 2, 3).
-    Aspect ratio matched exactly to Bland-Altman (7.2 x 5.0) for unified presentation.
+    Figure 7: Professional 2-Panel Radiogenomic Fidelity Figure:
+      Panel (a): Sphericity across WHO Grade II vs Grade III with jittered patient points.
+      Panel (b): 3D Volume across Molecular Subtypes (COC 1, 2, 3) with jittered patient points & generous labelpad.
     """
     import matplotlib.ticker as ticker
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.2, 5.0))
+    from matplotlib.patches import Patch
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 4.8))
+    np.random.seed(42)
 
     # Panel A: WHO Histologic Grade
     sub_grade = df_clinical_patients.dropna(subset=["neoplasm_histologic_grade"]).copy()
-    g2 = sub_grade[sub_grade["neoplasm_histologic_grade"] == 1.0]  # Grade II
-    g3 = sub_grade[sub_grade["neoplasm_histologic_grade"] == 2.0]  # Grade III
+    g2 = sub_grade[sub_grade["neoplasm_histologic_grade"] == 1.0]
+    g3 = sub_grade[sub_grade["neoplasm_histologic_grade"] == 2.0]
 
     positions = [1, 2, 4, 5]
     bp_data = [g2["gt_sph"].values, g2["pr_sph"].values, g3["gt_sph"].values, g3["pr_sph"].values]
     colors = ["#386cb0", "#7fc97f", "#386cb0", "#7fc97f"]
 
-    bplot1 = ax1.boxplot(bp_data, positions=positions, widths=0.6, patch_artist=True,
+    bplot1 = ax1.boxplot(bp_data, positions=positions, widths=0.55, patch_artist=True,
                          medianprops=dict(color="black", linewidth=1.5),
-                         boxprops=dict(alpha=0.8))
+                         boxprops=dict(alpha=0.75), showfliers=False)
 
     for patch, color in zip(bplot1["boxes"], colors):
         patch.set_facecolor(color)
 
+    # Add jittered points
+    for pos, vals in zip(positions, bp_data):
+        jitter = np.random.normal(pos, 0.04, size=len(vals))
+        ax1.scatter(jitter, vals, color="black", alpha=0.35, s=14, zorder=3)
+
     ax1.set_xticks([1.5, 4.5])
-    ax1.set_xticklabels(["WHO Grade II\n(n=51)", "WHO Grade III\n(n=58)"], fontsize=8.0)
-    ax1.set_ylabel("3D Tumor Sphericity ($\Psi$)", fontweight="bold", fontsize=9.0)
-    ax1.set_title("3D Sphericity Across Grades", fontweight="bold", fontsize=9.5)
+    ax1.set_xticklabels(["WHO Grade II\n($n=51$)", "WHO Grade III\n($n=58$)"], fontsize=9.0)
+    ax1.set_ylabel(r"3D Tumor Sphericity ($\Psi$)", fontweight="bold", fontsize=9.5, labelpad=8)
+    ax1.set_title("(a) 3D Sphericity Across WHO Grades", fontweight="bold", pad=10)
     ax1.set_ylim(0.15, 1.05)
 
-    # Custom legend for Panel A
-    from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor="#386cb0", alpha=0.8, label="Radiologist GT"),
-        Patch(facecolor="#7fc97f", alpha=0.8, label="Proposed 3D Model")
+        Patch(facecolor="#386cb0", alpha=0.75, edgecolor="k", label="Radiologist GT"),
+        Patch(facecolor="#7fc97f", alpha=0.75, edgecolor="k", label="Proposed 3D Model")
     ]
-    ax1.legend(handles=legend_elements, loc="upper right", frameon=True, fontsize=7.2)
+    ax1.legend(handles=legend_elements, loc="upper right", frameon=True, fontsize=8.0)
 
-    # Panel B: Molecular COC Clusters
+    # Panel B: Molecular Clusters (COC 1, 2, 3)
     sub_coc = df_clinical_patients.dropna(subset=["COCCluster"]).copy()
     coc1 = sub_coc[sub_coc["COCCluster"] == 1]
     coc2 = sub_coc[sub_coc["COCCluster"] == 2]
@@ -248,21 +267,26 @@ def plot_radiogenomic_fidelity(df_clinical_patients):
     ]
     colors_b = ["#386cb0", "#7fc97f", "#386cb0", "#7fc97f", "#386cb0", "#7fc97f"]
 
-    bplot2 = ax2.boxplot(bp_data_b, positions=positions_b, widths=0.6, patch_artist=True,
+    bplot2 = ax2.boxplot(bp_data_b, positions=positions_b, widths=0.55, patch_artist=True,
                          medianprops=dict(color="black", linewidth=1.5),
-                         boxprops=dict(alpha=0.8))
+                         boxprops=dict(alpha=0.75), showfliers=False)
 
     for patch, color in zip(bplot2["boxes"], colors_b):
         patch.set_facecolor(color)
 
-    ax2.set_xticks([1.5, 4.5, 7.5])
-    ax2.set_xticklabels(["COC 1\n(n=56)", "COC 2\n(n=24)", "COC 3\n(n=30)"], fontsize=8.0)
-    ax2.set_ylabel("3D Volume (voxels)", fontweight="bold", fontsize=9.0)
-    ax2.set_title("3D Volume Across Clusters ($p < 0.05$)", fontweight="bold", fontsize=9.5)
-    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x*1e-3):d}k" if x >= 1000 else f"{int(x):d}"))
-    ax2.legend(handles=legend_elements, loc="upper right", frameon=True, fontsize=7.2)
+    # Add jittered points
+    for pos, vals in zip(positions_b, bp_data_b):
+        jitter = np.random.normal(pos, 0.04, size=len(vals))
+        ax2.scatter(jitter, vals, color="black", alpha=0.35, s=14, zorder=3)
 
-    plt.tight_layout(pad=1.2)
+    ax2.set_xticks([1.5, 4.5, 7.5])
+    ax2.set_xticklabels(["COC 1 (IDH-wt like)\n($n=56$)", "COC 2 (IDHmut-noncodel)\n($n=24$)", "COC 3 (IDHmut-codel)\n($n=30$)"], fontsize=8.5)
+    ax2.set_ylabel("3D Volume (voxels)", fontweight="bold", fontsize=9.5, labelpad=12)
+    ax2.set_title("(b) 3D Volume Across Molecular Clusters ($p = 0.0268$)", fontweight="bold", pad=10)
+    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x*1e-3):d}k" if x >= 1000 else f"{int(x):d}"))
+    ax2.legend(handles=legend_elements, loc="upper right", frameon=True, fontsize=8.0)
+
+    plt.tight_layout(pad=1.4)
     pdf_path = os.path.join(FIG_DIR, "fig_radiogenomic_fidelity.pdf")
     png_path = os.path.join(FIG_DIR, "fig_radiogenomic_fidelity.png")
     fig.savefig(pdf_path)
@@ -272,13 +296,13 @@ def plot_radiogenomic_fidelity(df_clinical_patients):
     fig.savefig(os.path.join(sub_dir, "fig_radiogenomic_fidelity.pdf"))
     fig.savefig(os.path.join(sub_dir, "fig_radiogenomic_fidelity.png"))
     plt.close(fig)
-    print(f"[OK] Saved Radiogenomic Fidelity Plot to:\n     {pdf_path}")
+    print(f"[OK] Saved Radiogenomic Fidelity (Figure 7) to:\n     {pdf_path}")
+
 
 
 def main():
-    print("=" * 90)
-    print("  BSPC PHASE 3: STEP 4 - 3D CLINICAL RADIOMICS & GENOMIC FIDELITY")
-    print("=" * 90)
+    print("Running 3D radiomics evaluation and genomic fidelity analysis...")
+
 
     # 1. Load predictions and ground truth
     data = np.load(PREDS_NPZ)
@@ -425,7 +449,7 @@ def main():
     print(f"  • Spearman Rank Correlation (rho):     {rho:.4f} (p = {p_spearman:.2e}) [Monotonic volume agreement]")
     print(f"  • Intraclass Correlation ICC(2, 1):    {icc21:.4f} [Excellent clinical agreement (>0.85)]")
 
-    ba_results = plot_bland_altman(gt_vols, pr_vols)
+    ba_results = plot_clinical_volume_agreement(gt_vols, pr_vols)
     print(f"  • Bland-Altman Mean Bias:              {ba_results['mean_bias']:+.1f} voxels")
     print(f"  • 95% Limits of Agreement (LoA):       [{ba_results['loa_lower']:+.1f}, {ba_results['loa_upper']:+.1f}] voxels")
 

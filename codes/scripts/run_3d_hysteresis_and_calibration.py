@@ -1,23 +1,7 @@
 """
-=============================================================================
-BSPC Journal Phase 3: Step 2 - Leak-Free Inner Calibration & 3D Z-Hysteresis
-=============================================================================
-Executes:
-  1. Nested Temperature Scaling: T_k* tuned strictly on inner_val logits
-     via NLL minimization; applied to outer_test logits.
-     Evaluates NLL, ECE (Expected Calibration Error), and Brier Score.
-  2. Nested 2D Threshold Optimization: tau_k* tuned on inner_val vs.
-     Leaked Pooled Threshold (tau_leak*) to quantify Delta Optimism
-     (direct quantitative answer to Reviewer 1 and Editor).
-  3. 3D Z-Continuity Hysteresis:
-     - 3D volume assembly (128 x 128 x Z_p) per patient along Z-axis.
-     - Dual-threshold hysteresis (tau_high*, tau_low*) with 26-neighborhood
-       continuity and minimum volume filter (V_min*) tuned on inner_val.
-     - Applied to untouched outer_test 3D volumes.
-     - Evaluates Dice_pos, Dice_all, FPR_empty, and boundary slice rescue.
-  4. Patient-level clustered bootstrap (10,000 resamples) 95% CIs.
-=============================================================================
+Calibration and anisotropic 3D Z-continuity hysteresis post-processing.
 """
+
 
 import os
 import sys

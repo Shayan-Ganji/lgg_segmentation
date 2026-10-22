@@ -1,16 +1,7 @@
 """
-=============================================================================
-BSPC Journal Phase 3: Step 3 - Data Leakage Audit & 300 DPI Publication Plots
-=============================================================================
-Performs:
-  1. Quantitative comparison of 5-Fold patient_grouped vs 5-Fold random_slice
-     (Quantifying Dice inflation, ECE, Brier score, and Overconfidence gap).
-  2. Generates 3 publication-ready 300 DPI figures (PDF + PNG):
-     - fig_reliability_diagram: Calibration curves before/after TS and Grouped vs Random.
-     - fig_training_convergence: 5-Fold Training vs Validation Loss & Dice curves.
-     - fig_threshold_sensitivity: Sensitivity curves showing Nested vs Leaked thresholds.
-=============================================================================
+Data leakage audit and reliability calibration curve plotting.
 """
+
 
 import os
 import sys
@@ -380,9 +371,13 @@ def plot_threshold_sensitivity(data_pg):
              bbox=dict(facecolor="#e8f5e9", alpha=0.95, edgecolor="#1b9e77", pad=3))
 
     ax1.axvline(x=0.88, color="#e7298a", linestyle="-.", linewidth=1.8)
-    ax1.text(0.73, 69.5, r"Leaked Pooled $\tau_{leak}^* = 0.88$" + "\n$Dice_{pos}=74.66\%$\n($\Delta\mathrm{Optimism}=+0.063\%$)",
-             color="#c2185b", fontsize=8.0,
-             bbox=dict(facecolor="#fce4ec", alpha=0.95, edgecolor="#e7298a", pad=3))
+    ax1.annotate(
+        r"Leaked Pooled $\tau_{leak}^* = 0.88$" + "\n" + r"$Dice_{pos}=74.66\%$" + "\n" + r"($\Delta\mathrm{Optimism}=+0.063\%$)",
+        xy=(0.88, 74.66), xytext=(0.68, 68.0),
+        color="#c2185b", fontsize=8.0,
+        bbox=dict(facecolor="#fce4ec", alpha=0.95, edgecolor="#e7298a", pad=3),
+        arrowprops=dict(arrowstyle="->", color="#e7298a", lw=1.4, shrinkA=3, shrinkB=3)
+    )
 
     # Legend
     lines = l1 + l2 + l3
@@ -405,23 +400,19 @@ def plot_threshold_sensitivity(data_pg):
 
 
 def main():
-    print("=" * 90)
-    print("  BSPC PHASE 3: STEP 3 - DATA LEAKAGE AUDIT & 300 DPI PUBLICATION PLOTS")
-    print("=" * 90)
+    print("Running data leakage audit and generating figures...")
 
     # Load 5-Fold Patient-Grouped
     T_stars = {1: 2.019, 2: 2.387, 3: 1.649, 4: 1.520, 5: 1.644}
     data_pg = load_protocol_predictions("patient_grouped", temp_dict=T_stars)
-    print(f"[OK] Loaded patient_grouped: {len(data_pg['targets'])} slices.")
+    print(f"Loaded patient_grouped: {len(data_pg['targets'])} slices.")
 
     # Load 5-Fold Random-Slice
     data_rs = load_protocol_predictions("random_slice")
-    print(f"[OK] Loaded random_slice:    {len(data_rs['targets'])} slices.")
+    print(f"Loaded random_slice:    {len(data_rs['targets'])} slices.")
 
-    # 1. Quantitative Metrics Comparison
-    print("\n" + "=" * 90)
-    print("  SUB-STEP 3.1: QUANTITATIVE COMPARISON OF PATIENT-GROUPED VS RANDOM-SLICE")
-    print("=" * 90)
+    print("\nComparing metrics between patient-grouped and random-slice splits...")
+
 
     # Baseline tau = 0.50 metrics
     pg_d_pos, pg_d_all = compute_slice_dice(data_pg["targets"], (data_pg["probs"] >= 0.50).astype(np.uint8))

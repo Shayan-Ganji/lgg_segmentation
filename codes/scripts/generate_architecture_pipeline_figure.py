@@ -1,15 +1,7 @@
 """
-=============================================================================
-BSPC Journal: High-Resolution Architecture & Volumetric Pipeline Diagram
-=============================================================================
-Generates fig_architecture_pipeline.pdf and .png at 300 DPI.
-Illustrating:
-  1. Quality-Aware Screening & Wavelet Preprocessing
-  2. Attention Res-UNet Backbone (ResBlock + GN + GELU + DropPath + Attn Gates + Deep Sup)
-  3. Nested Calibration (Temperature Scaling T*)
-  4. Anisotropic 3D Z-Continuity Hysteresis (tau_xy* vs tau_z_low*, V_min*, Fallback)
-=============================================================================
+Generates the architecture and volumetric post-processing pipeline diagram.
 """
+
 
 import os
 import matplotlib
@@ -93,15 +85,17 @@ draw_arrow(13.75, 80.5, 13.75, 77.5)
 
 # Wavelet Gate Box
 draw_box(3.5, 54.0, 20.5, 9.5, "Quality-Aware Wavelet Denoising",
-         "$Q(I) = \\frac{1}{2}[\\sigma(I-M_3(I)) + \\sigma(I-G_3(I))]$\nIf $Q(I) < 4.0$: BayesShrink 2-level (95.1%)\nIf $Q(I) \\geq 4.0$: High-contrast bypass (4.9%)",
-         bg="#e0f2f1", border="#00897b", title_color="#00695c", fontsize=8.0)
+         r"$Q(I) = \frac{1}{2}[\sigma(I-\mathcal{M}_{3\times 3}(I)) + \sigma(I-\mathcal{G}_{3\times 3}(I))]$" + "\n" +
+         r"If $Q(I) < 4.0$: BayesShrink 2-level (95.1%)" + "\n" +
+         r"If $Q(I) \geq 4.0$: High-contrast bypass (4.9%)",
+         bg="#e0f2f1", border="#00897b", title_color="#00695c", fontsize=7.8)
 draw_arrow(13.75, 66.0, 13.75, 63.5)
 
 # ================= Stage 2: Attention Res-UNet Backbone =================
-p2 = FancyBboxPatch((28.0, 15), 41.0, 82, boxstyle="round,pad=0.3,rounding_size=2.0",
+p2 = FancyBboxPatch((28.0, 15), 40.5, 82, boxstyle="round,pad=0.3,rounding_size=2.0",
                     facecolor="#f5f7fc", edgecolor=c_enc, linewidth=1.5)
 ax.add_patch(p2)
-ax.text(48.5, 94.5, "Stage 2: Attention Residual U-Net Backbone (8.20M Params)", ha="center", va="center",
+ax.text(48.25, 94.5, "Stage 2: Attention Residual U-Net Backbone (8.20M Params)", ha="center", va="center",
         fontsize=10.5, fontweight="bold", color=c_enc)
 
 # Encoder blocks (Left)
@@ -181,15 +175,16 @@ draw_arrow(26.5, 58.7, 26.5, 81.5)
 draw_arrow(26.5, 81.5, 29.8, 81.5)
 
 # ================= Stage 3: Nested Calibration & 3D Anisotropic Hysteresis =================
-p3 = FancyBboxPatch((70.5, 15), 28.0, 82, boxstyle="round,pad=0.3,rounding_size=2.0",
+p3 = FancyBboxPatch((71.5, 15), 27.0, 82, boxstyle="round,pad=0.3,rounding_size=2.0",
                     facecolor="#f9fbf9", edgecolor=c_hyst, linewidth=1.5)
 ax.add_patch(p3)
-ax.text(84.5, 94.5, "Stage 3: Calibration & Anisotropic 3D Hysteresis", ha="center", va="center",
+ax.text(85.0, 94.5, "Stage 3: Calibration & Anisotropic 3D Hysteresis", ha="center", va="center",
         fontsize=10.5, fontweight="bold", color=c_hyst)
 
 # Connection from Decoder to Calibration
-draw_arrow(67.4, 82.5, 72.5, 82.5)
-ax.text(69.9, 84.5, "Logits $z(x)$", fontsize=7.5, color=c_arrow, ha="center")
+draw_arrow(67.4, 81.5, 72.8, 81.5)
+ax.text(70.1, 83.5, "Logits $z(x)$", fontsize=7.8, fontweight="bold", color=c_arrow, ha="center")
+
 
 # Nested Temp Scaling Box
 draw_box(72.5, 74.0, 24.0, 13.0, "Nested Temperature Scaling ($T^*$)",

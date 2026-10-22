@@ -1,15 +1,7 @@
 """
-=============================================================================
-BSPC Journal Production Pipeline: 5-Fold Resumable GPU Experiment Runner
-Outputs:
-  - best_model_fold{k}.weights.h5
-  - oof_val_predictions_fold{k}.npz  (contains logits, probs, targets, patient_ids, slice_indices)
-  - oof_test_predictions_fold{k}.npz (contains logits, probs, targets, patient_ids, slice_indices)
-  - fold{k}_history.csv              (epoch-by-epoch loss/dice)
-  - cohort_screening_audit.csv       (complete 3,929 slice screening record)
-  - experiment_summary.json          (overall OOF performance)
-=============================================================================
+5-fold cross-validation training and evaluation pipeline runner.
 """
+
 
 import os
 import sys
