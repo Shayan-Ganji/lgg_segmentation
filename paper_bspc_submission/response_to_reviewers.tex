@@ -58,7 +58,11 @@ We sincerely thank the Associate Editor and Reviewers for their constructive cri
         \item Nested Inner-Fold Search ($\tau_k^*$): $\text{Dice}_{\text{pos}} = 74.60\%$ [95\% CI: 70.45\%--78.08\%]
         \item Leaked Pooled Search ($\tau_{\text{leak}}^* = 0.88$ on test data): $\text{Dice}_{\text{pos}} = 74.66\%$
     \end{enumerate}
-    \item We define and report the \textbf{Optimism Bias}: $\Delta\text{Optimism} = \text{Dice}(\tau_{\text{leak}}^*) - \text{Dice}(\tau_k^*) = +0.063\%$. This demonstrates that our reported gains are nested inner-fold calibrated without test snooping.
+    \item We formally define and quantify the \textbf{Optimism Bias}:
+    \begin{equation*}
+    \Delta\text{Optimism} = \text{Dice}(\tau_{\text{leak}}^*) - \text{Dice}(\tau_{xy, k}^*) = 74.66\% - 74.60\% = +0.063\%
+    \end{equation*}
+    This demonstrates that our reported gains are nested inner-fold calibrated without test snooping.
 \end{itemize}
 }
 

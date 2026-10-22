@@ -39,7 +39,10 @@ def load_flair(path):
     img = cv2.imread(path)
     if img is not None:
         # BGR in OpenCV: channel 1 (Green) is FLAIR
-        return img[:, :, 1]
+        ch1 = img[:, :, 1]
+        if ch1.max() == 0 and img.max() > 0:
+            return np.max(img, axis=2)
+        return ch1
     return np.zeros((256, 256), dtype=np.uint8)
 
 def main():
@@ -108,9 +111,9 @@ def main():
     # Row 1: Excluded Artifact Slices (Row 1 of Panel b)
     art_cases = [
         {
-            "path": os.path.join(KAGGLE_DIR, "TCGA_CS_4943_20000902", "TCGA_CS_4943_20000902_20.tif"),
+            "path": os.path.join(KAGGLE_DIR, "TCGA_CS_6669_20020102", "TCGA_CS_6669_20020102_22.tif"),
             "title": "Artifact 1: FOV Truncation",
-            "metrics": "$ED=0.0023$, $CR=0.0020$\n$d_c=0.64$ | Excluded (0 px)"
+            "metrics": "$ED=0.000$, $CR < 0.01$\n$d_c=1.00$ | Excluded (0 px)"
         },
         {
             "path": os.path.join(KAGGLE_DIR, "TCGA_HT_A61B_19991127", "TCGA_HT_A61B_19991127_78.tif"),

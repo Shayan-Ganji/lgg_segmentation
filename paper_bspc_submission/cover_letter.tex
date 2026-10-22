@@ -49,7 +49,7 @@ We are pleased to submit our original research manuscript entitled:
 by Shayan Ganji Nataj and Keivan Borna (Corresponding Author) for publication consideration as a regular research article in \textit{Biomedical Signal Processing and Control}.
 
 \vspace{0.6em}
-Lower-grade gliomas (LGG, WHO grades II and III) represent heterogeneous infiltrative brain tumors where precise computer-assisted delineation is critical for surgical resection and radiotherapy planning. Despite intensive deep learning research, two major methodological pitfalls pervasive in medical imaging literature frequently undermine clinical translation: (1) slice-level data leakage, where random slice splits allow networks to memorize anatomical features across contiguous axial slices from the same subject, and (2) post-hoc threshold tuning directly on the testing cohort, introducing artificial optimism. Furthermore, 2D networks evaluated on volumetric MRI encounter axial discontinuity at apical and basal tumor margins while suffering elevated false-positive alarms across non-neoplastic slices (which comprise 65.1\% of the TCGA-LGG imaging volume).
+Lower-grade gliomas (LGG, WHO grades II and III) represent heterogeneous infiltrative brain tumors where precise computer-assisted delineation is critical for surgical resection and radiotherapy planning. Despite intensive deep learning research, two major methodological pitfalls pervasive in medical imaging literature frequently undermine clinical translation: (1) slice-level data leakage, where random slice splits allow networks to memorize anatomical features across contiguous axial slices from the same subject, and (2) post-hoc threshold tuning directly on the testing cohort, introducing artificial optimism. Furthermore, 2D networks evaluated on volumetric MRI encounter axial discontinuity at apical and basal tumor margins while suffering elevated false-positive alarms across non-neoplastic slices (which comprise 65.1\% of the TCGA-LGG imaging volume). The synergistic integration of automated signal and image quality screening ($Q(I)$), Symlet-4 wavelet denoising, post-hoc probabilistic calibration, and radiogenomic digital biomarker extraction places this work directly within the core scope of \textit{Biomedical Signal Processing and Control}, establishing a clinically verifiable benchmark for translational neuro-oncology.
 
 \vspace{0.6em}
 In this study, we address these challenges through a mathematically rigorous, patient-isolated pipeline and methodological auditing framework:
@@ -124,7 +124,11 @@ We sincerely thank the Associate Editor and Reviewers for their constructive cri
         \item Nested Inner-Fold Search ($\tau_k^*$): $\text{Dice}_{\text{pos}} = 74.60\%$ [95\% CI: 70.45\%--78.08\%]
         \item Leaked Pooled Search ($\tau_{\text{leak}}^* = 0.88$ on test data): $\text{Dice}_{\text{pos}} = 74.66\%$
     \end{enumerate}
-    \item We define and report the \textbf{Optimism Bias}: $\Delta\text{Optimism} = \text{Dice}(\tau_{\text{leak}}^*) - \text{Dice}(\tau_k^*) = +0.063\%$. This demonstrates that our reported gains are nested inner-fold calibrated without test snooping.
+    \item We formally define and quantify the \textbf{Optimism Bias}:
+    \begin{equation*}
+    \Delta\text{Optimism} = \text{Dice}(\tau_{\text{leak}}^*) - \text{Dice}(\tau_{xy, k}^*) = 74.66\% - 74.60\% = +0.063\%
+    \end{equation*}
+    This demonstrates that our reported gains are nested inner-fold calibrated without test snooping.
 \end{itemize}
 }
 
