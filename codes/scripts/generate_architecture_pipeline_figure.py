@@ -79,10 +79,10 @@ draw_box(3.5, 80.5, 20.5, 10.5, "Raw Multi-Sequence MRI",
          bg="#ffffff", border=c_input, title_color=c_input, fontsize=9.2, title_offset=1.8, subtitle_offset=3.8)
 
 # Screening Box
-draw_box(3.5, 64.5, 20.5, 12.8, "Morphological Artifact Screen",
+draw_box(3.5, 63.5, 20.5, 14.2, "Morphological Artifact Screen",
          "Canny Edge Density ($ED < 0.003$)\nContour Ratio ($CR < 0.01$)\nCentroid Dist ($d_c > 0.30$)\nFlags 200 noisy slices (199 tumor-free)",
-         bg="#e1f5fe", border=c_preproc, title_color=c_preproc, fontsize=9.2, title_offset=1.7, subtitle_offset=4.8)
-draw_arrow(13.75, 80.5, 13.75, 77.3)
+         bg="#e1f5fe", border=c_preproc, title_color=c_preproc, fontsize=9.2, title_offset=1.2, subtitle_offset=5.5)
+draw_arrow(13.75, 80.5, 13.75, 78.0)
 
 # Wavelet Gate Box
 draw_box(3.5, 51.5, 20.5, 10.5, "Quality-Aware Wavelet Denoising",
@@ -90,7 +90,7 @@ draw_box(3.5, 51.5, 20.5, 10.5, "Quality-Aware Wavelet Denoising",
          r"If $Q(I) < 4.0$: BayesShrink 2-level (95.1%)" + "\n" +
          r"If $Q(I) \geq 4.0$: High-contrast bypass (4.9%)",
          bg="#e0f2f1", border="#00897b", title_color="#00695c", fontsize=8.6, title_offset=1.7, subtitle_offset=4.0)
-draw_arrow(13.75, 64.5, 13.75, 62.0)
+draw_arrow(13.75, 63.5, 13.75, 62.0)
 
 # ================= Stage 2: Attention Res-UNet Backbone =================
 p2 = FancyBboxPatch((28.0, 15), 40.5, 82, boxstyle="round,pad=0.3,rounding_size=2.0",
@@ -150,7 +150,7 @@ draw_box(52.2, 62.0, 15.0, 9.0, "Decoder 2 ($64^2$)",
 draw_arrow(59.7, 56.0, 59.7, 62.0, style="->")
 ax.text(60.2, 59.0, "UpConv 2x2", fontsize=8.0, color=c_arrow)
 
-draw_box(52.2, 77.0, 15.0, 9.0, "Decoder 1 ($128^2$)",
+draw_box(52.2, 77.0, 14.0, 9.0, "Decoder 1 ($128^2$)",
          "32 Filters | ConvTrans 2x2\nResBlock + GN ($G=8$)",
          bg="#e0f7fa", border=c_dec, title_color=c_dec, fontsize=9.2)
 draw_arrow(59.7, 71.0, 59.7, 77.0, style="->")
@@ -182,10 +182,10 @@ ax.add_patch(p3)
 ax.text(85.0, 94.5, "Stage 3: Calibration & Anisotropic 3D Hysteresis", ha="center", va="center",
         fontsize=11.5, fontweight="bold", color=c_hyst)
 
-# Connection from Decoder to Calibration with pill badge
-draw_arrow(67.2, 81.5, 72.5, 81.5, lw=1.8)
-ax.text(69.85, 83.8, "Logits $z(x)$", fontsize=8.8, fontweight="bold", color=c_arrow, ha="center",
-        bbox=dict(boxstyle="round,pad=0.25", facecolor="#ffffff", edgecolor="#90a4ae", alpha=0.95, lw=1.0))
+# Connection from Decoder to Calibration with pill badge in open corridor
+draw_arrow(66.2, 81.5, 72.5, 81.5, lw=1.8)
+ax.text(69.35, 84.3, "Logits $z(x)$", fontsize=8.0, fontweight="bold", color=c_arrow, ha="center",
+        bbox=dict(boxstyle="round,pad=0.2", facecolor="#ffffff", edgecolor="#90a4ae", alpha=0.95, lw=0.9))
 
 # Nested Temp Scaling Box
 draw_box(72.5, 74.0, 24.0, 13.0, "Nested Temperature Scaling ($T^*$)",
@@ -230,10 +230,10 @@ png_out = os.path.join(FIG_DIR, "fig_architecture_pipeline.png")
 paper_pdf = os.path.join(PAPER_FIG_DIR, "fig_architecture_pipeline.pdf")
 paper_png = os.path.join(PAPER_FIG_DIR, "fig_architecture_pipeline.png")
 
-fig.savefig(pdf_out, bbox_inches="tight")
-fig.savefig(png_out, bbox_inches="tight")
-fig.savefig(paper_pdf, bbox_inches="tight")
-fig.savefig(paper_png, bbox_inches="tight")
+fig.savefig(pdf_out, bbox_inches="tight", pad_inches=0.15)
+fig.savefig(png_out, bbox_inches="tight", pad_inches=0.15)
+fig.savefig(paper_pdf, bbox_inches="tight", pad_inches=0.15)
+fig.savefig(paper_png, bbox_inches="tight", pad_inches=0.15)
 plt.close(fig)
 
 print(f"[OK] Generated Architecture & Pipeline Diagram:\n  -> {pdf_out}\n  -> {paper_pdf}")

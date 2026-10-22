@@ -288,30 +288,31 @@ def plot_training_convergence():
     ax.set_ylim(20, 95)
 
     plt.tight_layout(pad=1.5)
+    fig.subplots_adjust(top=0.92, left=0.08)
     pdf_path = os.path.join(FIG_DIR, "fig_training_convergence.pdf")
     png_path = os.path.join(FIG_DIR, "fig_training_convergence.png")
-    fig.savefig(pdf_path)
-    fig.savefig(png_path)
+    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.15)
 
     # Copy to submission folder
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
-    fig.savefig(os.path.join(sub_dir, "fig_training_convergence.pdf"))
-    fig.savefig(os.path.join(sub_dir, "fig_training_convergence.png"))
+    fig.savefig(os.path.join(sub_dir, "fig_training_convergence.pdf"), bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(os.path.join(sub_dir, "fig_training_convergence.png"), bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
     print(f"[OK] Saved 2x2 Training Convergence Plot to:\n     {pdf_path}")
 
 
 def plot_threshold_sensitivity(data_pg):
     """
-    Plots sensitivity curves of Dice_pos, Dice_all, and FPR_empty vs threshold tau,
+    Plots sensitivity curves of Dice_pos, Dice_all, and FPR_empty vs calibrated threshold tau,
     explicitly annotating:
       - Fixed Baseline (tau = 0.50)
-      - Nested Inner-Fold average (tau_nested* = 0.86)
-      - Leaked Pooled Search (tau_leak* = 0.88, exact peak at 74.66%)
+      - Nested Inner-Fold average (tau_xy* = 0.74, matching Table 4; raw equiv = 0.86)
+      - Leaked Pooled Search (tau_leak* = 0.76, raw equiv = 0.88, peak at 74.66%)
       - Delta Optimism (+0.063%)
     """
     targets = data_pg["targets"]
-    probs = data_pg["probs"]
+    probs = data_pg["cal_probs"]  # Calibrated probability space
 
     has_t = np.sum(targets, axis=(1, 2)) > 0
     empty_mask = ~has_t
@@ -349,7 +350,7 @@ def plot_threshold_sensitivity(data_pg):
     # Left axis: Dice
     l1 = ax1.plot(taus, dice_pos_list, color="#1f78b4", linewidth=2.3, label="Tumor Slices Dice ($Dice_{pos}$)")
     l2 = ax1.plot(taus, dice_all_list, color="#33a02c", linewidth=2.3, label="All Slices Dice ($Dice_{all}$)")
-    ax1.set_xlabel(r"Decision Threshold ($\tau$)", fontweight="bold")
+    ax1.set_xlabel(r"Calibrated Decision Threshold $\tau$ [$\hat{P} = \sigma(z/\hat{T}_k^*)$]", fontweight="bold")
     ax1.set_ylabel("Dice Similarity (%)", color="#1f78b4", fontweight="bold")
     ax1.tick_params(axis="y", labelcolor="#1f78b4")
     ax1.set_ylim(67, 88)
@@ -362,19 +363,19 @@ def plot_threshold_sensitivity(data_pg):
 
     # Vertical reference lines and non-overlapping labels
     ax1.axvline(x=0.50, color="gray", linestyle=":", linewidth=1.5, alpha=0.8)
-    ax1.text(0.28, 69.8, r"Fixed Baseline ($\tau=0.50$)" + "\n$Dice_{pos}=73.96\%$",
-             color="#333333", fontsize=8.5, bbox=dict(facecolor="white", alpha=0.9, edgecolor="#cccccc", pad=3))
+    ax1.text(0.24, 69.8, r"Fixed Baseline ($\tau=0.50$)" + "\n$Dice_{pos}=73.96\%$",
+             color="#333333", fontsize=8.2, bbox=dict(facecolor="white", alpha=0.9, edgecolor="#cccccc", pad=3))
 
-    ax1.axvline(x=0.864, color="#1b9e77", linestyle="-.", linewidth=1.8)
-    ax1.text(0.55, 84.8, r"Nested Inner-Fold $\tau_k^* = 0.86$" + "\n$Dice_{pos}=74.60\%$",
-             color="#1b9e77", fontsize=8.5, fontweight="bold",
+    ax1.axvline(x=0.74, color="#1b9e77", linestyle="-.", linewidth=1.8)
+    ax1.text(0.50, 84.8, r"Nested Inner-Fold $\tau_{xy}^* = 0.74$" + "\n" + r"(Raw equiv: $0.86$, $Dice_{pos}=74.60\%$)",
+             color="#1b9e77", fontsize=8.0, fontweight="bold",
              bbox=dict(facecolor="#e8f5e9", alpha=0.95, edgecolor="#1b9e77", pad=3))
 
-    ax1.axvline(x=0.88, color="#e7298a", linestyle="-.", linewidth=1.8)
+    ax1.axvline(x=0.76, color="#e7298a", linestyle="-.", linewidth=1.8)
     ax1.annotate(
-        r"Leaked Pooled $\tau_{leak}^* = 0.88$" + "\n" + r"$Dice_{pos}=74.66\%$" + "\n" + r"($\Delta\mathrm{Optimism}=+0.063\%$)",
-        xy=(0.88, 74.66), xytext=(0.67, 70.0),
-        color="#c2185b", fontsize=8.0,
+        r"Leaked Pooled $\tau_{leak}^* = 0.76$" + "\n" + r"(Raw equiv: $0.88$, $Dice_{pos}=74.66\%$)" + "\n" + r"($\Delta\mathrm{Optimism}=+0.063\%$)",
+        xy=(0.76, 74.66), xytext=(0.55, 70.0),
+        color="#c2185b", fontsize=7.8,
         bbox=dict(facecolor="#fce4ec", alpha=0.95, edgecolor="#e7298a", pad=3),
         arrowprops=dict(arrowstyle="->", color="#e7298a", lw=1.5, shrinkA=3, shrinkB=2)
     )
@@ -382,19 +383,19 @@ def plot_threshold_sensitivity(data_pg):
     # Legend
     lines = l1 + l2 + l3
     labels = [l.get_label() for l in lines]
-    ax1.legend(lines, labels, loc="upper left", frameon=True, fontsize=8.2, framealpha=0.92)
+    ax1.legend(lines, labels, loc="upper left", frameon=True, fontsize=7.6, framealpha=0.92)
 
     plt.title("Decision Threshold Sensitivity & Nested Calibration", pad=12, fontweight="bold", fontsize=11)
     plt.tight_layout()
 
     pdf_path = os.path.join(FIG_DIR, "fig_threshold_sensitivity.pdf")
     png_path = os.path.join(FIG_DIR, "fig_threshold_sensitivity.png")
-    fig.savefig(pdf_path)
-    fig.savefig(png_path)
+    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.15)
 
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
-    fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.pdf"))
-    fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.png"))
+    fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.pdf"), bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.png"), bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
     print(f"[OK] Saved Threshold Sensitivity Plot to:\n     {pdf_path}")
 

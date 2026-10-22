@@ -30,12 +30,17 @@ plt.rcParams.update({
     "grid.linestyle": "--"
 })
 
-def denoise_wavelet_slice(img_rgb):
-    img_float = img_rgb.astype(np.float32) / 255.0
-    denoised = np.zeros_like(img_float)
-    for c in range(3):
-        denoised[..., c] = denoise_wavelet(img_float[..., c], method='BayesShrink', mode='soft', rescale_sigma=True)
+def denoise_wavelet_slice(img_gray):
+    img_float = img_gray.astype(np.float32) / 255.0
+    denoised = denoise_wavelet(img_float, method='BayesShrink', mode='soft', rescale_sigma=True)
     return np.clip(denoised * 255.0, 0, 255).astype(np.uint8)
+
+def load_flair(path):
+    img = cv2.imread(path)
+    if img is not None:
+        # BGR in OpenCV: channel 1 (Green) is FLAIR
+        return img[:, :, 1]
+    return np.zeros((256, 256), dtype=np.uint8)
 
 def main():
     print("[1/3] Loading cohort audit data...")
@@ -101,7 +106,6 @@ def main():
 
     # ================= Panel (b): Real Slice Grid =================
     # Row 1: Excluded Artifact Slices (Row 1 of Panel b)
-    # Col 2, 3, 4
     art_cases = [
         {
             "path": os.path.join(KAGGLE_DIR, "TCGA_CS_4943_20000902", "TCGA_CS_4943_20000902_20.tif"),
@@ -122,10 +126,8 @@ def main():
 
     for col_idx, item in enumerate(art_cases):
         ax = fig.add_subplot(gs[0, col_idx + 2])
-        img = cv2.imread(item["path"])
-        if img is not None:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            ax.imshow(img)
+        flair = load_flair(item["path"])
+        ax.imshow(flair, cmap="gray")
         ax.set_title(item["title"], fontsize=9.2, fontweight="bold", pad=5)
         ax.set_xlabel(item["metrics"], fontsize=8.6, fontweight="bold", color="#b71c1c", labelpad=4)
         ax.set_xticks([])
@@ -135,24 +137,23 @@ def main():
     p_norm = os.path.join(KAGGLE_DIR, "TCGA_CS_4943_20000902", "TCGA_CS_4943_20000902_13.tif")
     p_high = os.path.join(KAGGLE_DIR, "TCGA_CS_6667_20011105", "TCGA_CS_6667_20011105_11.tif")
 
-    img_norm_raw = cv2.cvtColor(cv2.imread(p_norm), cv2.COLOR_BGR2RGB)
-    img_norm_denoised = denoise_wavelet_slice(img_norm_raw)
-
-    img_high_raw = cv2.cvtColor(cv2.imread(p_high), cv2.COLOR_BGR2RGB)
+    flair_norm_raw = load_flair(p_norm)
+    flair_norm_denoised = denoise_wavelet_slice(flair_norm_raw)
+    flair_high_raw = load_flair(p_high)
 
     filter_cases = [
         {
-            "img": img_norm_raw,
+            "img": flair_norm_raw,
             "title": "Raw Slice (Moderate Noise)",
             "sub": "$Q(I) = 2.37 < 4.0$\nRaw Input Slice"
         },
         {
-            "img": img_norm_denoised,
+            "img": flair_norm_denoised,
             "title": "Wavelet Denoised (Symlet-4)",
             "sub": "BayesShrink Denoised\nArtifacts Suppressed"
         },
         {
-            "img": img_high_raw,
+            "img": flair_high_raw,
             "title": "High-Contrast Bypass",
             "sub": "$Q(I) = 4.12 \\geq 4.0$\nPreserved (No Denoising)"
         }
@@ -160,26 +161,26 @@ def main():
 
     for col_idx, item in enumerate(filter_cases):
         ax = fig.add_subplot(gs[1, col_idx + 2])
-        ax.imshow(item["img"])
+        ax.imshow(item["img"], cmap="gray")
         ax.set_title(item["title"], fontsize=9.2, fontweight="bold", pad=5)
         color = "#1b5e20" if col_idx == 1 else ("#0d47a1" if col_idx == 0 else "#e65100")
         ax.set_xlabel(item["sub"], fontsize=8.6, fontweight="bold", color=color, labelpad=4)
         ax.set_xticks([])
         ax.set_yticks([])
 
-    # Subplot row titles for panel (b)
-    fig.text(0.40, 0.94, "(b) Preprocessing Audit: Excluded Artifact Slices (Top) and Quality-Aware Wavelet Gate (Bottom)",
-             fontsize=11, fontweight="bold", ha="left")
+    # Subplot row titles for panel (b) - shortened and aligned
+    fig.text(0.38, 0.94, "(b) Excluded Artifact Slices (Top) & Wavelet Denoising Gate (Bottom)",
+             fontsize=10.5, fontweight="bold", ha="left")
 
     pdf_out = os.path.join(FIG_DIR, "fig_preprocessing_audit.pdf")
     png_out = os.path.join(FIG_DIR, "fig_preprocessing_audit.png")
     paper_pdf = os.path.join(PAPER_FIG_DIR, "fig_preprocessing_audit.pdf")
     paper_png = os.path.join(PAPER_FIG_DIR, "fig_preprocessing_audit.png")
 
-    fig.savefig(pdf_out, bbox_inches="tight")
-    fig.savefig(png_out, bbox_inches="tight")
-    fig.savefig(paper_pdf, bbox_inches="tight")
-    fig.savefig(paper_png, bbox_inches="tight")
+    fig.savefig(pdf_out, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(png_out, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(paper_pdf, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(paper_png, bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
 
     print(f"[OK] Generated Preprocessing Audit Figure:\n  -> {pdf_out}\n  -> {paper_pdf}")

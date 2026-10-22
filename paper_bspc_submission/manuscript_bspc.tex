@@ -105,7 +105,7 @@ d_c = \frac{\sqrt{(c_x - W/2)^2 + (c_y - H/2)^2}}{\sqrt{(W/2)^2 + (H/2)^2}}
 \end{equation}
 where $d_c > 0.30$ captures severe peripheral displacement.
 
-Slices satisfying the conjunction $(ED < 0.003) \land (CR < 0.01) \land (d_c > 0.30)$ were flagged as morphological artifacts. A rigorous cohort audit across all 3,929 slices identified 200 artifact slices ($5.09\%$, Table~\ref{tab:screening_audit}). Exactly 199 of these 200 slices ($99.50\%$) contained zero neoplastic tissue ($y = 0$). Only a single slice ($0.50\%$, Slice 23 of TCGA\_DU\_5855) contained an atypical peripheral fringe with 23 positive pixels, truncated by skull-stripping boundary erosion. Retaining these 200 noisy slices in the untouched test evaluation confirmed an absolute $0.00\%$ change in positive-slice Dice ($73.96\%$ in both full and screened cohorts), verifying zero empirical bias.
+Slices satisfying the conjunction $(ED < 0.003) \land (CR < 0.01) \land (d_c > 0.30)$ were flagged as morphological artifacts. A rigorous cohort audit across all 3,929 slices identified 200 artifact slices ($5.09\%$, Table~\ref{tab:screening_audit}). Exactly 199 of these 200 slices ($99.50\%$) contained zero neoplastic tissue ($y = 0$). Only a single slice ($0.50\%$, Slice 23 of TCGA\_DU\_5855) contained a marginal peripheral tumor component truncated by skull-stripping boundary erosion. Retaining these 200 noisy slices in the untouched test evaluation confirmed an absolute $0.00\%$ change in positive-slice Dice ($73.96\%$ in both full and screened cohorts), verifying zero empirical bias.
 
 \begin{table}[tbp]
 \centering
@@ -168,10 +168,6 @@ where $\mu_{G}$ and $\sigma_{G}$ are computed independently across spatial coord
 \begin{equation}
 \text{GELU}(x) = x \cdot \Phi(x) = x \cdot P(X \le x), \quad X \sim \mathcal{N}(0, 1)
 \end{equation}
-approximated via:
-\begin{equation}
-\text{GELU}(x) \approx 0.5x \left(1 + \tanh\left(\sqrt{\frac{2}{\pi}}\left(x + 0.044715x^3\right)\right)\right)
-\end{equation}
 Regularization is reinforced via Stochastic Depth (DropPath)~\cite{huang2016deep} across residual branches:
 \begin{equation}
 \begin{aligned}
@@ -220,7 +216,7 @@ Every test slice was evaluated strictly by the single dedicated model $\mathcal{
 \end{equation}
 This 1-to-1 patient-to-fold mapping eliminates ensemble averaging ambiguity: no soft blending or multi-model averaging was utilized.
 
-To quantify the precise degree of optimistic bias induced by slice-level data leakage, a matched parallel 5-fold Random-Slice cross-validation control experiment was conducted concurrently. Under this control protocol, the 3,929 axial slices were randomly partitioned into five equal folds without patient identity grouping, allowing slices from all 110 patients (100\% patient overlap) to co-exist simultaneously across training, validation, and testing sets. Identical network architectures, learning rate schedules, loss formulations ($\alpha=0.8, \beta=0.2, \gamma=0.6$), and stopping criteria were strictly enforced to isolate the isolated effect of patient data leakage from model capacity.
+To quantify the precise degree of optimistic bias induced by slice-level data leakage, a matched parallel 5-fold Random-Slice cross-validation control experiment was conducted concurrently. Under this control protocol, the 3,929 axial slices were randomly partitioned into five equal folds without patient identity grouping, allowing slices from all 110 patients (100\% patient overlap) to co-exist simultaneously across training, validation, and testing sets. Identical network architectures, learning rate schedules, loss formulations ($\alpha=0.8, \beta=0.2, \gamma=0.6$), and stopping criteria were strictly enforced to isolate the effect of patient-level data leakage from model capacity.
 
 \subsection{Slice-Level Metric Definitions}
 In MRI volumes containing large proportions of healthy slices, evaluation metrics must handle non-tumor slices without distortion. We adhere to the standard clinical convention:
@@ -343,7 +339,7 @@ Table~\ref{tab:calibration_folds} presents fold-by-fold calibration and threshol
 
 \subsection{Quantification of Optimism Bias (\texorpdfstring{$\Delta\text{Optimism}$}{Delta Optimism})}
 \label{sec:optimism_bias}
-To address post-hoc threshold tuning leakage, we quantified the empirical difference between nested inner-fold thresholding and pooled test threshold sweeping (Figure~\ref{fig:threshold_sensitivity}). When decision thresholds $\tau_k^*$ were selected strictly on independent inner validation partitions, the model achieved an out-of-fold test $\text{Dice}_{\text{pos}}$ of $74.60\%$ [95\% CI: $70.45\%$--$78.08\%$]. Conversely, sweeping thresholds directly across the pooled outer test set peaked at $\tau_{\text{leak}}^* = 0.88$, yielding an apparent $\text{Dice}_{\text{pos}}$ of $74.66\%$. The resulting empirical optimism bias is:
+To address post-hoc threshold tuning leakage, we quantified the empirical difference between nested inner-fold thresholding and pooled test threshold sweeping (Figure~\ref{fig:threshold_sensitivity}). When decision thresholds were selected strictly on independent inner validation partitions (mean calibrated $\tau_{xy}^* = 0.74$, corresponding to raw uncalibrated threshold $0.86$), the model achieved an out-of-fold test $\text{Dice}_{\text{pos}}$ of $74.60\%$ [95\% CI: $70.45\%$--$78.08\%$]. Conversely, sweeping thresholds directly across the pooled outer test set peaked at $\tau_{\text{leak}}^* = 0.76$ (raw threshold $0.88$), yielding an apparent $\text{Dice}_{\text{pos}}$ of $74.66\%$. The resulting empirical optimism bias is:
 \begin{equation}
 \Delta\text{Optimism} = 74.66\% - 74.60\% = +0.063\%
 \end{equation}
@@ -352,7 +348,7 @@ While modest in magnitude, auditing this difference confirms that the reported g
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=\columnwidth]{figures/fig_threshold_sensitivity.pdf}
-\caption{Decision threshold sensitivity analysis on out-of-fold predictions. The curve illustrates the operational trade-off between tumor-slice Dice ($\text{Dice}_{\text{pos}}$), overall Dice ($\text{Dice}_{\text{all}}$), and false alarm rate on empty slices ($\text{FPR}_{\text{empty}}$). Vertical markers denote the standard baseline ($\tau = 0.50$), the nested inner-fold calibrated threshold ($\tau_k^* = 0.86$), and the post-hoc leaked threshold ($\tau_{\text{leak}}^* = 0.88$).}
+\caption{Decision threshold sensitivity analysis on out-of-fold predictions plotted across calibrated probabilities $\hat{P} = \sigma(z/\hat{T}_k^*)$. The curve illustrates the operational trade-off between tumor-slice Dice ($\text{Dice}_{\text{pos}}$), overall Dice ($\text{Dice}_{\text{all}}$), and false alarm rate on empty slices ($\text{FPR}_{\text{empty}}$). Vertical markers denote the standard baseline ($\tau = 0.50$), the nested inner-fold calibrated threshold ($\tau_{xy}^* = 0.74$, corresponding to raw uncalibrated threshold $0.86$), and the post-hoc leaked threshold ($\tau_{\text{leak}}^* = 0.76$, raw equivalent $0.88$).}
 \label{fig:threshold_sensitivity}
 \end{figure}
 
@@ -364,6 +360,7 @@ By decoupling in-plane binarization from axial margin rescue, the proposed 3D fr
 \caption{Comprehensive comparison of 2D Baseline, 2D Nested, and Proposed Anisotropic 3D Z-Hysteresis across all 3,929 out-of-fold test slices (10,000 bootstrap 95\% CIs).}
 \label{tab:method_comparison}
 \setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{0.96}
 \footnotesize
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccc}
 \toprule
@@ -393,6 +390,7 @@ Table~\ref{tab:leakage_audit} contrasts patient-grouped partitioning against ran
 \caption{Systematic data leakage audit comparing patient-grouped against random-slice 5-fold cross-validation on the TCGA-LGG cohort.}
 \label{tab:leakage_audit}
 \setlength{\tabcolsep}{3.0pt}
+\renewcommand{\arraystretch}{0.96}
 \footnotesize
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
 \toprule
@@ -423,8 +421,6 @@ Random slice splitting artificially inflated positive-slice Dice by \textbf{+8.7
 \subsection{Patient-Level 3D Surface and Volumetric Assessment}
 Individual 2D predictions were stacked into full 3D volumes across all 110 subjects. Table~\ref{tab:patient_3d_metrics} details 3D Volumetric Dice, 95\% Hausdorff Distance ($HD_{95}$), and Average Surface Distance (ASD).
 
-\clearpage
-
 \begin{table}[tbp]
 \centering
 \caption{Patient-level 3D volumetric and surface boundary metrics across all 110 TCGA-LGG patients.}
@@ -443,8 +439,6 @@ Individual 2D predictions were stacked into full 3D volumes across all 110 subje
 \end{table}
 
 The proposed Anisotropic 3D Z-Hysteresis consistently outperforms both 2D baselines across all patient-level volumetric metrics. 3D Volumetric Dice reaches $77.73\% \pm 18.65\%$ with a median of $84.42\%$ (interquartile range [IQR]: $70.85\%$--$91.24\%$). Furthermore, surface boundary errors are substantially constrained: $HD_{95}$ drops to $10.97 \pm 18.28$ voxels (median: $2.24$, IQR: $1.00$--$12.03$), while ASD improves to $3.10 \pm 12.48$ voxels (median: $0.63$, IQR: $0.29$--$2.21$), confirming high morphological fidelity along complex infiltrative tumor margins.
-
-\clearpage
 
 \begin{figure}[tbp]
 \centering
@@ -529,7 +523,7 @@ The clinical translation of automated deep learning systems for lower-grade glio
 
 Our empirical audit conclusively demonstrated that conventional slice-level random splitting induces a substantial $+8.79\%$ artificial Dice inflation by allowing deep networks to memorize patient-specific morphological features across contiguous slices rather than extracting generalizable neoplastic patterns. Furthermore, we showed that uncalibrated overlap losses generate overconfident probabilistic halos that can be effectively regularized via nested temperature scaling without shifting decision boundaries. By explicitly decoupling in-plane planar binarization from axial boundary rescue along the $z$-axis, the proposed Anisotropic 3D Z-Continuity Hysteresis algorithm eliminated $42.4\%$ of false alarms on tumor-free tissue while recovering infiltrative apical margins. Beyond geometric metrics, the extracted 3D volumes demonstrated excellent reproducibility against radiologist assessments ($\text{ICC} = 0.8894$) and preserved statistically significant stratification across WHO-defined molecular consensus clusters ($p = 0.0268$). 
 
-By establishing a transparent, leak-free benchmark on the complete TCGA-LGG cohort, this work provides a standardized methodological template and a robust volumetric framework to support surgical planning, radiation oncology, and quantitative neuro-oncology diagnostics.
+By establishing a transparent, leakage-audited, patient-grouped benchmark on the complete TCGA-LGG cohort, this work provides a standardized methodological template and a robust volumetric framework to support surgical planning, radiation oncology, and quantitative neuro-oncology diagnostics.
 
 \section*{CRediT authorship contribution statement}
 \textbf{Shayan Ganji Nataj:} Conceptualization, Methodology, Software, Formal analysis, Investigation, Data curation, Visualization, Writing -- original draft. \textbf{Keivan Borna:} Supervision, Project administration, Writing -- review and editing, Validation.
