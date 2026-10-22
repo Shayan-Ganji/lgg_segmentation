@@ -385,17 +385,18 @@ def plot_threshold_sensitivity(data_pg):
     labels = [l.get_label() for l in lines]
     ax1.legend(lines, labels, loc="upper left", frameon=True, fontsize=7.6, framealpha=0.92)
 
-    plt.title("Decision Threshold Sensitivity & Nested Calibration", pad=12, fontweight="bold", fontsize=11)
+    # In-plot title omitted per Elsevier Guide for Authors (typeset in LaTeX caption)
+    # plt.title("Decision Threshold Sensitivity & Nested Calibration", pad=12, fontweight="bold", fontsize=11)
     plt.tight_layout()
 
     pdf_path = os.path.join(FIG_DIR, "fig_threshold_sensitivity.pdf")
     png_path = os.path.join(FIG_DIR, "fig_threshold_sensitivity.png")
-    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.20)
+    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.20)
 
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
-    fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.pdf"), bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.png"), bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.pdf"), bbox_inches="tight", pad_inches=0.20)
+    fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.png"), bbox_inches="tight", pad_inches=0.20)
     plt.close(fig)
     print(f"[OK] Saved Threshold Sensitivity Plot to:\n     {pdf_path}")
 
