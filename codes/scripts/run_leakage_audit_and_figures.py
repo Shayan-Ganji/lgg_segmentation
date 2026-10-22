@@ -152,21 +152,21 @@ def plot_reliability_diagram(cal_pg_uncal, cal_pg_cal, cal_rs):
     ax1.plot(
         cal_pg_uncal["bin_confs"], cal_pg_uncal["bin_accs"],
         marker="s", markersize=6, linewidth=2, color="#d95f02",
-        label=f"Patient-Grouped (Uncalibrated, ECE={cal_pg_uncal['ece']*100:.2f}%)"
+        label=f"Patient-Grouped (Uncalibrated, ECE={cal_pg_uncal['ece']*100:.3f}%)"
     )
 
     # Grouped Calibrated (Temperature Scaled)
     ax1.plot(
         cal_pg_cal["bin_confs"], cal_pg_cal["bin_accs"],
         marker="o", markersize=6, linewidth=2.5, color="#1b9e77",
-        label=f"Patient-Grouped (Calibrated, ECE={cal_pg_cal['ece']*100:.2f}%)"
+        label=f"Patient-Grouped (Calibrated, ECE={cal_pg_cal['ece']*100:.3f}%)"
     )
 
     # Random Slice (Leaked)
     ax1.plot(
         cal_rs["bin_confs"], cal_rs["bin_accs"],
         marker="^", markersize=6, linewidth=1.8, linestyle=":", color="#7570b3",
-        label=f"Random-Slice (Data-Leaked, ECE={cal_rs['ece']*100:.2f}%)"
+        label=f"Random-Slice (Data-Leaked, ECE={cal_rs['ece']*100:.3f}%)"
     )
 
     ax1.set_ylabel("Empirical Accuracy (Fraction of Positives)")
@@ -306,20 +306,20 @@ def plot_threshold_sensitivity(data_pg):
     Plots sensitivity curves of Dice_pos, Dice_all, and FPR_empty vs threshold tau,
     explicitly annotating:
       - Fixed Baseline (tau = 0.50)
-      - Nested Inner-Fold average (tau_nested* = 0.74)
-      - Leaked Pooled Search (tau_leak* = 0.88)
+      - Nested Inner-Fold average (tau_nested* = 0.86)
+      - Leaked Pooled Search (tau_leak* = 0.88, exact peak at 74.66%)
       - Delta Optimism (+0.063%)
     """
     targets = data_pg["targets"]
-    cal_probs = data_pg["cal_probs"]
+    probs = data_pg["probs"]
 
     has_t = np.sum(targets, axis=(1, 2)) > 0
     empty_mask = ~has_t
 
-    taus = np.arange(0.15, 0.92, 0.02)
-    pos_probs = cal_probs[has_t]
+    taus = np.arange(0.20, 0.95, 0.02)
+    pos_probs = probs[has_t]
     pos_targets = targets[has_t]
-    empty_max_probs = np.max(cal_probs[empty_mask], axis=(1, 2))
+    empty_max_probs = np.max(probs[empty_mask], axis=(1, 2))
 
     dice_pos_list = []
     dice_all_list = []
@@ -362,21 +362,21 @@ def plot_threshold_sensitivity(data_pg):
 
     # Vertical reference lines and non-overlapping labels
     ax1.axvline(x=0.50, color="gray", linestyle=":", linewidth=1.5, alpha=0.8)
-    ax1.text(0.30, 69.8, r"Fixed Baseline ($\tau=0.50$)" + "\n$Dice_{pos}=73.96\%$",
+    ax1.text(0.28, 69.8, r"Fixed Baseline ($\tau=0.50$)" + "\n$Dice_{pos}=73.96\%$",
              color="#333333", fontsize=8.5, bbox=dict(facecolor="white", alpha=0.9, edgecolor="#cccccc", pad=3))
 
-    ax1.axvline(x=0.744, color="#1b9e77", linestyle="-.", linewidth=1.8)
-    ax1.text(0.55, 84.8, r"Nested Inner-Fold $\tau_k^* = 0.74$" + "\n$Dice_{pos}=74.60\%$",
+    ax1.axvline(x=0.864, color="#1b9e77", linestyle="-.", linewidth=1.8)
+    ax1.text(0.55, 84.8, r"Nested Inner-Fold $\tau_k^* = 0.86$" + "\n$Dice_{pos}=74.60\%$",
              color="#1b9e77", fontsize=8.5, fontweight="bold",
              bbox=dict(facecolor="#e8f5e9", alpha=0.95, edgecolor="#1b9e77", pad=3))
 
     ax1.axvline(x=0.88, color="#e7298a", linestyle="-.", linewidth=1.8)
     ax1.annotate(
         r"Leaked Pooled $\tau_{leak}^* = 0.88$" + "\n" + r"$Dice_{pos}=74.66\%$" + "\n" + r"($\Delta\mathrm{Optimism}=+0.063\%$)",
-        xy=(0.88, 74.66), xytext=(0.68, 68.0),
+        xy=(0.88, 74.66), xytext=(0.67, 70.0),
         color="#c2185b", fontsize=8.0,
         bbox=dict(facecolor="#fce4ec", alpha=0.95, edgecolor="#e7298a", pad=3),
-        arrowprops=dict(arrowstyle="->", color="#e7298a", lw=1.4, shrinkA=3, shrinkB=3)
+        arrowprops=dict(arrowstyle="->", color="#e7298a", lw=1.5, shrinkA=3, shrinkB=2)
     )
 
     # Legend

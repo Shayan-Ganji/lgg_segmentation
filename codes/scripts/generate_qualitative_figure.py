@@ -139,8 +139,8 @@ for row_idx, sc in enumerate(scenarios):
     ax0.imshow(img_display)
     if row_idx == 0:
         ax0.set_title(col_titles[0], fontweight="bold", pad=8)
-    ax0.set_ylabel(row_labels[row_idx], fontsize=9.5, fontweight="bold", labelpad=10)
-    ax0.set_xlabel("Normalized Input", fontsize=9.0, color="#424242", labelpad=5)
+    ax0.set_ylabel(row_labels[row_idx], fontsize=10.5, fontweight="bold", labelpad=10)
+    ax0.set_xlabel("Normalized Input", fontsize=11.2, fontweight="bold", color="#333333", labelpad=6)
     ax0.set_xticks([])
     ax0.set_yticks([])
 
@@ -152,7 +152,7 @@ for row_idx, sc in enumerate(scenarios):
         ax1.set_title(col_titles[1], fontweight="bold", pad=8)
     gt_px = int(np.sum(y_true))
     txt_gt = f"GT: {gt_px} px" if gt_px > 0 else "GT: 0 px (Empty)"
-    ax1.set_xlabel(txt_gt, fontsize=9.2, fontweight="bold", color="#1b5e20", labelpad=5)
+    ax1.set_xlabel(txt_gt, fontsize=11.5, fontweight="bold", color="#1b5e20", labelpad=6)
     ax1.set_xticks([])
     ax1.set_yticks([])
 
@@ -162,7 +162,7 @@ for row_idx, sc in enumerate(scenarios):
     ax2.imshow(overlay_b)
     if row_idx == 0:
         ax2.set_title(col_titles[2], fontweight="bold", pad=8)
-    ax2.set_xlabel(sc["desc_base"], fontsize=9.2, fontweight="bold", color="#b71c1c", labelpad=5)
+    ax2.set_xlabel(sc["desc_base"], fontsize=11.5, fontweight="bold", color="#b71c1c", labelpad=6)
     ax2.set_xticks([])
     ax2.set_yticks([])
 
@@ -172,7 +172,7 @@ for row_idx, sc in enumerate(scenarios):
     ax3.imshow(overlay_n)
     if row_idx == 0:
         ax3.set_title(col_titles[3], fontweight="bold", pad=8)
-    ax3.set_xlabel(sc["desc_nest"], fontsize=9.2, fontweight="bold", color="#e65100", labelpad=5)
+    ax3.set_xlabel(sc["desc_nest"], fontsize=11.5, fontweight="bold", color="#e65100", labelpad=6)
     ax3.set_xticks([])
     ax3.set_yticks([])
 
@@ -182,7 +182,7 @@ for row_idx, sc in enumerate(scenarios):
     ax4.imshow(overlay_h)
     if row_idx == 0:
         ax4.set_title(col_titles[4], fontweight="bold", pad=8)
-    ax4.set_xlabel(sc["desc_hyst"], fontsize=9.2, fontweight="bold", color="#006064", labelpad=5)
+    ax4.set_xlabel(sc["desc_hyst"], fontsize=11.5, fontweight="bold", color="#006064", labelpad=6)
     ax4.set_xticks([])
     ax4.set_yticks([])
 

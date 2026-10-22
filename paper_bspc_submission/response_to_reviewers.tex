@@ -39,7 +39,7 @@ We sincerely thank the Associate Editor and Reviewers for their constructive cri
 \commentbox{Associate Editor Comment 1}{The authors must ensure complete methodological rigor, eliminating any possibility of threshold tuning leakage or ambiguous ensembling, and clearly demonstrate the clinical and 3D utility of the proposed segmentation system.}
 \responsebox{We deeply appreciate the Editor's guidance. In this revised submission, we have addressed all methodological concerns:
 \begin{enumerate}
-    \item \textbf{Strict Nested Cross-Validation:} All hyperparameter tuning---including temperature scaling calibration ($T_k^*$), horizontal in-plane binarization ($\tau_{xy, k}^*$), axial rescue threshold ($\tau_{z\_low, k}^*$), and 3D component filtering ($V_{min, k}^*, \tau_{seed, k}^*$)---is performed exclusively on the internal validation set (\texttt{inner\_val}) of each fold. The test set (\texttt{outer\_test}) remains untouched until final evaluation. We formally quantify the artificial optimism of post-hoc test tuning as $\Delta\text{Optimism} = +0.063\%$ in Section~5.3.
+    \item \textbf{Strict Nested Cross-Validation:} All hyperparameter tuning---including temperature scaling calibration ($T_k^*$), horizontal in-plane binarization ($\tau_{xy, k}^*$), axial rescue threshold ($\tau_{z\text{\_}low, k}^*$), and 3D component filtering ($V_{min, k}^*, \tau_{seed, k}^*$)---is performed exclusively on the internal validation set (\texttt{inner\_val}) of each fold. The test set (\texttt{outer\_test}) remains untouched until final evaluation. We formally quantify the artificial optimism of post-hoc test tuning as $\Delta\text{Optimism} = +0.063\%$ in Section~5.3.
     \item \textbf{Unambiguous Evaluation Mapping:} We explicitly clarify that out-of-fold (OOF) predictions are generated strictly by the dedicated model trained for that fold (a 1-to-1 patient mapping), completely refuting any 5-model ensemble averaging ambiguity (Section~3.3).
     \item \textbf{Clinical and 3D Volumetric Agreement:} We reconstruct full 3D volumes for all 110 TCGA-LGG patients, evaluating 3D Volumetric Dice ($77.73\%$), 95\% Hausdorff Distance ($10.97$ voxels), Average Surface Distance ($3.10$ voxels), Intraclass Correlation ($\text{ICC}(2, 1) = 0.8894$), and genomic subtype concordance ($p = 0.0268$ across \textit{COCCluster} cohorts).
 \end{enumerate}
@@ -75,18 +75,17 @@ Every patient slice belongs to exactly one test fold $\mathcal{D}_{\text{test}}^
     \item \textbf{Patient-Grouped Split (Zero Leakage):} All slices belonging to any given patient are assigned strictly to a single fold.
     \item \textbf{Random-Slice Split (Data-Leaked):} Slices from the same patient are randomly dispersed across training and testing partitions.
 \end{itemize}
-As reported in Section~5.5 and Table~6, the random slice split yields an artificial positive-slice Dice inflation of \textbf{+8.79\%} (82.74\% vs. 73.96\%) and an overall Dice inflation of \textbf{+6.20\%} (88.22\% vs. 82.02\%). Furthermore, Figure~3(c)--(d) illustrates the severe curve inversion in the leaky split, where validation Dice abnormally exceeds training Dice due to slice memorization. This controlled experiment proves that high Dice numbers in prior 2D literature often stem from slice leakage rather than architectural innovation.}
+As reported in Section~5.5 and Table~6, the random slice split yields an artificial positive-slice Dice inflation of \textbf{+8.79\%} (82.74\% vs. 73.96\%) and an overall Dice inflation of \textbf{+6.20\%} (88.22\% vs. 82.02\%). Furthermore, Figure~4(c)--(d) illustrates the severe curve inversion in the leaky split, where validation Dice abnormally exceeds training Dice due to slice memorization. This controlled experiment proves that high Dice numbers in prior 2D literature often stem from slice leakage rather than architectural innovation.}
 
 \commentbox{Comment 4 (Validation Measurement Protocol and Data Augmentation)}{Were validation loss and Dice curves computed with stochastic data augmentation enabled or in pure inference mode? Augmentation during validation distorts performance curves.}
-\responsebox{In our revised pipeline (Section~3.2), validation and test evaluation are conducted in \textbf{pure inference mode} without data augmentation. Stochastic transformations (affine rotations, scaling, and elastic deformation) are active strictly during forward-backward training steps. Slices in \texttt{inner\_val} and \texttt{outer\_test} are fed in deterministic axial sequence using preprocessed, unaugmented MRI tensors. The convergence history across all 5 folds is illustrated in Figure~3(a)--(b).}
-
+\responsebox{In our revised pipeline (Section~3.2), validation and test evaluation are conducted in \textbf{pure inference mode} without data augmentation. Stochastic transformations (affine rotations, scaling, and elastic deformation) are active strictly during forward-backward training steps. Slices in \texttt{inner\_val} and \texttt{outer\_test} are fed in deterministic axial sequence using preprocessed, unaugmented MRI tensors. The convergence history across all 5 folds is illustrated in Figure~4(a)--(b).}
 
 \commentbox{Comment 5 (Artifact Screening Audit and Slices Removed)}{The manuscript mentions excluding 200 artifact slices during training. The authors must audit whether this exclusion introduces selection bias or discards small neoplastic lesions.}
-\responsebox{We have conducted a slice-by-slice morphological and histopathological audit across all 3,929 slices (Section~2.2 and Table~2):
+\responsebox{We have conducted a slice-by-slice morphological and histopathological audit across all 3,929 slices (Section~2.2, Table~2, and Figure~1):
 \begin{enumerate}
     \item \textbf{Empty Slices:} Out of the 200 excluded slices, exactly \textbf{199 slices (99.50\%)} are completely tumor-free ($y = 0$). Only 1 slice contained a marginal lesion (0.50\%, Slice 23 of TCGA\_DU\_5855) where severe gradient coil clipping truncated the brain parenchyma.
     \item \textbf{Zero Change on Positive Slices:} Evaluating the model on the full cohort (3,929 slices) versus the screened cohort (3,729 slices) results in \textbf{identical positive-slice Dice of 73.96\%} (a change of exactly $0.00\%$, Table~2).
-    \item \textbf{Wavelet Denoising Gate:} Denoising is selectively applied only when slice quality index $Q(I) < 4.0$ (3,738 slices, 95.14\%), while high-quality slices ($Q \ge 4.0$, 191 slices, 4.86\%) bypass filtering to preserve fine parenchymal microstructures.
+    \item \textbf{Wavelet Denoising Gate:} Denoising is selectively applied only when slice quality index $Q(I) < 4.0$ (3,738 slices, 95.14\%), while high-quality slices ($Q \ge 4.0$, 191 slices, 4.86\%) bypass filtering to preserve fine parenchymal microstructures (illustrated in Figure~1).
 \end{enumerate}
 }
 
@@ -106,7 +105,7 @@ Across the 5 folds, the optimal temperature averaged $\hat{T}^* = 1.844$, confir
     \item Pooled cohort Expected Calibration Error (ECE) dropped by \textbf{46.9\%} (0.369\% to 0.196\%, Table~4 and Table~6).
     \item Mean per-fold ECE dropped by \textbf{31.7\%} (0.372\% to 0.254\%).
     \item Brier Score improved from 0.00375 to 0.00338 (-9.9\%), and NLL decreased from 0.0230 to 0.0154 (-32.9\%).
-    \item Reliability diagrams (Figure~2) confirm that empirical probability bins align closely with the diagonal identity line after temperature scaling.
+    \item Reliability diagrams (Figure~3) confirm that empirical probability bins align closely with the diagonal identity line after temperature scaling.
 \end{itemize}
 Subsequently, our nested thresholding ($\tau_{xy}^* = 0.74$) and Anisotropic 3D Z-Hysteresis shave off this FP halo, elevating Precision to $76.86\%$ (Table~5).}
 
