@@ -51,7 +51,7 @@ To resolve these challenges, this study presents a calibrated, leakage-audited v
 \begin{enumerate}
     \item \textbf{Controlled Leakage Audit:} We implement a matched 5-fold cross-validation experiment directly comparing patient-grouped partitioning against random-slice partitioning under identical training hyper-parameters, quantifying the exact magnitude of performance inflation caused by slice memorization ($+8.79\%$ on positive-slice Dice).
     \item \textbf{Nested Inner-Fold Calibration:} We integrate scalar temperature scaling fitted exclusively on internal validation logits (\texttt{inner\_val}), reducing pooled Expected Calibration Error (ECE) by $46.9\%$ on unseen test data without shifting classification boundaries.
-    \item \textbf{Anisotropic 3D Z-Continuity Hysteresis:} We decouple horizontal in-plane segmentation ($\tau_{xy}^*$) from axial margin rescue ($\tau_{z\text{\_}low}^*$) and suppress isolated 3D false positives ($V_{min}^*, \tau_{seed}^*$), establishing state-of-the-art performance across all evaluation metrics simultaneously ($\text{Dice}_{\text{pos}} = 74.92\%$, $\text{Dice}_{\text{all}} = 86.12\%$, $\text{FPR}_{\text{empty}} = 7.86\%$).
+    \item \textbf{Anisotropic 3D Z-Continuity Hysteresis:} We decouple horizontal in-plane segmentation ($\tau_{xy}^*$) from axial margin rescue ($\tau_{z,\mathrm{low}}^*$) and suppress isolated 3D false positives ($V_{min}^*, \tau_{seed}^*$), establishing state-of-the-art performance across all evaluation metrics simultaneously ($\text{Dice}_{\text{pos}} = 74.92\%$, $\text{Dice}_{\text{all}} = 86.12\%$, $\text{FPR}_{\text{empty}} = 7.86\%$).
     \item \textbf{Volumetric Radiogenomic Validation:} We conduct 3D patient-level surface and volumetric assessments ($n=110$), demonstrating high clinical reproducibility ($\text{ICC} = 0.8894$) and proving that model-derived tumor volumes preserve statistically significant separation across molecular consensus clusters ($p = 0.0268$).
 \end{enumerate}
 
@@ -257,9 +257,9 @@ In 2D axial segmentation, high decision thresholds suppress false alarms but tru
     \begin{equation}
     \mathcal{S}_{\text{prior}} = \text{Dilate}_{2D}\left(M^{(0)}_{z-1} \cup M^{(0)}_{z+1}, \mathcal{K}_{3\times 3}\right)
     \end{equation}
-    Voxels within $\mathcal{S}_{\text{prior}}$ satisfying a relaxed axial threshold $\tau_{z\text{\_}low, k}^*$ ($0.35 \le \tau_{z\text{\_}low}^* < \tau_{xy}^*$) are rescued:
+    Voxels within $\mathcal{S}_{\text{prior}}$ satisfying a relaxed axial threshold $\tau_{z,\mathrm{low}, k}^*$ ($0.35 \le \tau_{z,\mathrm{low}}^* < \tau_{xy}^*$) are rescued:
     \begin{equation}
-    M^{(1)}_z = M^{(0)}_z \cup \left( \mathcal{S}_{\text{prior}} \cap \mathbb{I}(\hat{P}_z \ge \tau_{z\text{\_}low, k}^*) \right)
+    M^{(1)}_z = M^{(0)}_z \cup \left( \mathcal{S}_{\text{prior}} \cap \mathbb{I}(\hat{P}_z \ge \tau_{z,\mathrm{low}, k}^*) \right)
     \end{equation}
     \item \textbf{3D Volumetric Component Suppression:} On the resulting 3D volume, 26-connected components $\{C_l\}$ are labeled. Components are discarded if their 3D volume is smaller than $V_{min, k}^*$ or their peak probability is below $\tau_{seed, k}^*$:
     \begin{equation}
@@ -421,7 +421,9 @@ Random slice splitting artificially inflated positive-slice Dice by \textbf{+8.7
 \subsection{Patient-Level 3D Surface and Volumetric Assessment}
 Individual 2D predictions were stacked into full 3D volumes across all 110 subjects. Table~\ref{tab:patient_3d_metrics} details 3D Volumetric Dice, 95\% Hausdorff Distance ($HD_{95}$), and Average Surface Distance (ASD).
 
-\begin{table}[tbp]
+The proposed Anisotropic 3D Z-Hysteresis consistently outperforms both 2D baselines across all patient-level volumetric metrics. 3D Volumetric Dice reaches $77.73\% \pm 18.65\%$ with a median of $84.42\%$ (interquartile range [IQR]: $70.85\%$--$91.24\%$). Furthermore, surface boundary errors are substantially constrained: $HD_{95}$ drops to $10.97 \pm 18.28$ voxels (median: $2.24$, IQR: $1.00$--$12.03$), while ASD improves to $3.10 \pm 12.48$ voxels (median: $0.63$, IQR: $0.29$--$2.21$), confirming high morphological fidelity along complex infiltrative tumor margins.
+
+\begin{table}[t!]
 \centering
 \caption{Patient-level 3D volumetric and surface boundary metrics across all 110 TCGA-LGG patients.}
 \label{tab:patient_3d_metrics}
@@ -437,8 +439,6 @@ Individual 2D predictions were stacked into full 3D volumes across all 110 subje
 \bottomrule
 \end{tabular*}
 \end{table}
-
-The proposed Anisotropic 3D Z-Hysteresis consistently outperforms both 2D baselines across all patient-level volumetric metrics. 3D Volumetric Dice reaches $77.73\% \pm 18.65\%$ with a median of $84.42\%$ (interquartile range [IQR]: $70.85\%$--$91.24\%$). Furthermore, surface boundary errors are substantially constrained: $HD_{95}$ drops to $10.97 \pm 18.28$ voxels (median: $2.24$, IQR: $1.00$--$12.03$), while ASD improves to $3.10 \pm 12.48$ voxels (median: $0.63$, IQR: $0.29$--$2.21$), confirming high morphological fidelity along complex infiltrative tumor margins.
 
 \begin{figure}[tbp]
 \centering

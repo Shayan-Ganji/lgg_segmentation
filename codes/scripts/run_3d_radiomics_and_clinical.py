@@ -281,7 +281,7 @@ def plot_radiogenomic_fidelity(df_clinical_patients):
         ax2.scatter(jitter, vals, color="black", alpha=0.35, s=14, zorder=3)
 
     ax2.set_xticks([1.5, 4.5, 7.5])
-    ax2.set_xticklabels(["COC 1 (IDH-wt like)\n($n=56$)", "COC 2 (IDHmut-noncodel)\n($n=24$)", "COC 3 (IDHmut-codel)\n($n=30$)"], fontsize=8.5)
+    ax2.set_xticklabels(["COC 1 (IDH-wt like)\n($n=56$)", "COC 2 (IDHmut-noncodel)\n($n=24$)", "COC 3 (IDHmut-codel)\n($n=30$)"], fontsize=7.5)
     ax2.set_ylabel("3D Volume (voxels)", fontweight="bold", fontsize=9.5, labelpad=12)
     ax2.set_title("(b) 3D Volume Across Molecular Clusters ($p = 0.0268$)", fontweight="bold", fontsize=9.8, pad=10)
     ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x*1e-3):d}k" if x >= 1000 else f"{int(x):d}"))
@@ -291,12 +291,12 @@ def plot_radiogenomic_fidelity(df_clinical_patients):
     fig.subplots_adjust(top=0.88)
     pdf_path = os.path.join(FIG_DIR, "fig_radiogenomic_fidelity.pdf")
     png_path = os.path.join(FIG_DIR, "fig_radiogenomic_fidelity.png")
-    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.20)
+    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.20)
 
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
-    fig.savefig(os.path.join(sub_dir, "fig_radiogenomic_fidelity.pdf"), bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(os.path.join(sub_dir, "fig_radiogenomic_fidelity.png"), bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(os.path.join(sub_dir, "fig_radiogenomic_fidelity.pdf"), bbox_inches="tight", pad_inches=0.20)
+    fig.savefig(os.path.join(sub_dir, "fig_radiogenomic_fidelity.png"), bbox_inches="tight", pad_inches=0.20)
     plt.close(fig)
     print(f"[OK] Saved Radiogenomic Fidelity (Figure 8) to:\n     {pdf_path}")
 

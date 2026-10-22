@@ -79,9 +79,9 @@ draw_box(3.5, 80.5, 20.5, 10.5, "Raw Multi-Sequence MRI",
          bg="#ffffff", border=c_input, title_color=c_input, fontsize=9.2, title_offset=1.8, subtitle_offset=3.8)
 
 # Screening Box
-draw_box(3.5, 63.5, 20.5, 14.2, "Morphological Artifact Screen",
+draw_box(3.5, 63.5, 20.5, 14.5, "Morphological Artifact Screen",
          "Canny Edge Density ($ED < 0.003$)\nContour Ratio ($CR < 0.01$)\nCentroid Dist ($d_c > 0.30$)\nFlags 200 noisy slices (199 tumor-free)",
-         bg="#e1f5fe", border=c_preproc, title_color=c_preproc, fontsize=9.2, title_offset=1.2, subtitle_offset=5.5)
+         bg="#e1f5fe", border=c_preproc, title_color=c_preproc, fontsize=9.0, title_offset=1.2, subtitle_offset=4.8)
 draw_arrow(13.75, 80.5, 13.75, 78.0)
 
 # Wavelet Gate Box
@@ -150,7 +150,7 @@ draw_box(52.2, 62.0, 15.0, 9.0, "Decoder 2 ($64^2$)",
 draw_arrow(59.7, 56.0, 59.7, 62.0, style="->")
 ax.text(60.2, 59.0, "UpConv 2x2", fontsize=8.0, color=c_arrow)
 
-draw_box(52.2, 77.0, 14.0, 9.0, "Decoder 1 ($128^2$)",
+draw_box(52.2, 77.0, 13.5, 9.0, "Decoder 1 ($128^2$)",
          "32 Filters | ConvTrans 2x2\nResBlock + GN ($G=8$)",
          bg="#e0f7fa", border=c_dec, title_color=c_dec, fontsize=9.2)
 draw_arrow(59.7, 71.0, 59.7, 77.0, style="->")
@@ -162,13 +162,14 @@ for y_gate, label in [(36.5, "AG4"), (51.5, "AG3"), (66.5, "AG2"), (81.5, "AG1")
     draw_arrow(44.8, y_gate, 46.0, y_gate, color=c_attn, lw=1.2)
     draw_arrow(51.0, y_gate, 52.2, y_gate, color=c_attn, lw=1.2)
 
-# Deep Supervision branches
+# Deep Supervision branches routed cleanly through open corridor between Stage 2 and Stage 3
 draw_box(52.2, 2.0, 15.0, 10.0, "Deep Supervision Heads",
          "$\\mathcal{L}_{total} = 1.0\\mathcal{L}_{main} + 0.3\\mathcal{L}_{d2} + 0.3\\mathcal{L}_{d3}$\n$\\mathcal{L} = 0.70\\mathcal{L}_{FTL}(\\alpha=0.8,\\beta=0.2) + 0.30\\mathcal{L}_{BF}$",
          bg="#f3e5f5", border=c_ds, title_color=c_ds, fontsize=8.0)
-draw_arrow(67.2, 51.5, 68.5, 51.5, color=c_ds, lw=1.2)
-draw_arrow(68.5, 51.5, 68.5, 7.0, color=c_ds, lw=1.2)
-draw_arrow(68.5, 7.0, 67.2, 7.0, color=c_ds, lw=1.2)
+draw_arrow(67.2, 66.5, 69.8, 66.5, color=c_ds, lw=1.2)
+draw_arrow(67.2, 51.5, 69.8, 51.5, color=c_ds, lw=1.2)
+draw_arrow(69.8, 66.5, 69.8, 7.0, color=c_ds, lw=1.2)
+draw_arrow(69.8, 7.0, 67.2, 7.0, color=c_ds, lw=1.2)
 
 # Pipeline connection from Preproc to Backbone
 draw_arrow(24.0, 56.5, 26.5, 56.5)
@@ -183,9 +184,9 @@ ax.text(85.0, 94.5, "Stage 3: Calibration & Anisotropic 3D Hysteresis", ha="cent
         fontsize=11.5, fontweight="bold", color=c_hyst)
 
 # Connection from Decoder to Calibration with pill badge in open corridor
-draw_arrow(66.2, 81.5, 72.5, 81.5, lw=1.8)
-ax.text(69.35, 84.3, "Logits $z(x)$", fontsize=8.0, fontweight="bold", color=c_arrow, ha="center",
-        bbox=dict(boxstyle="round,pad=0.2", facecolor="#ffffff", edgecolor="#90a4ae", alpha=0.95, lw=0.9))
+draw_arrow(65.7, 81.5, 72.5, 81.5, lw=1.8)
+ax.text(69.1, 84.8, "Logits $z(x)$", fontsize=7.8, fontweight="bold", color=c_arrow, ha="center",
+        bbox=dict(boxstyle="round,pad=0.18", facecolor="#ffffff", edgecolor="#90a4ae", alpha=0.95, lw=0.9))
 
 # Nested Temp Scaling Box
 draw_box(72.5, 74.0, 24.0, 13.0, "Nested Temperature Scaling ($T^*$)",

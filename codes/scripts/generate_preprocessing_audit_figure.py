@@ -119,7 +119,7 @@ def main():
         },
         {
             "path": os.path.join(KAGGLE_DIR, "TCGA_CS_5395_19981004", "TCGA_CS_5395_19981004_20.tif"),
-            "title": "Artifact 3: Non-Parenchymal Fringe",
+            "title": "Artifact 3: Off-Axis Fringe",
             "metrics": "$ED=0.0000$, $CR=0.0000$\n$d_c=1.00$ | Excluded (0 px)"
         }
     ]
@@ -127,8 +127,12 @@ def main():
     for col_idx, item in enumerate(art_cases):
         ax = fig.add_subplot(gs[0, col_idx + 2])
         flair = load_flair(item["path"])
-        ax.imshow(flair, cmap="gray")
-        ax.set_title(item["title"], fontsize=9.2, fontweight="bold", pad=5)
+        v_min = float(flair.min())
+        v_max = float(np.percentile(flair, 99.5) + 1e-5)
+        if v_max <= v_min:
+            v_max = v_min + 1.0
+        ax.imshow(flair, cmap="gray", vmin=v_min, vmax=v_max)
+        ax.set_title(item["title"], fontsize=8.8, fontweight="bold", pad=5)
         ax.set_xlabel(item["metrics"], fontsize=8.6, fontweight="bold", color="#b71c1c", labelpad=4)
         ax.set_xticks([])
         ax.set_yticks([])
@@ -177,10 +181,10 @@ def main():
     paper_pdf = os.path.join(PAPER_FIG_DIR, "fig_preprocessing_audit.pdf")
     paper_png = os.path.join(PAPER_FIG_DIR, "fig_preprocessing_audit.png")
 
-    fig.savefig(pdf_out, bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(png_out, bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(paper_pdf, bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(paper_png, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(pdf_out, bbox_inches="tight", pad_inches=0.20)
+    fig.savefig(png_out, bbox_inches="tight", pad_inches=0.20)
+    fig.savefig(paper_pdf, bbox_inches="tight", pad_inches=0.20)
+    fig.savefig(paper_png, bbox_inches="tight", pad_inches=0.20)
     plt.close(fig)
 
     print(f"[OK] Generated Preprocessing Audit Figure:\n  -> {pdf_out}\n  -> {paper_pdf}")
