@@ -1,0 +1,19 @@
+\NeedsTeXFormat{LaTeX2e}%
+\ProvidesPackage{geometry}[2020/01/01 Minimal Portable Geometry Stub]%
+\newcommand{\geometry}[1]{%
+  \setlength\paperwidth{210mm}%
+  \setlength\paperheight{297mm}%
+  \setlength\textwidth{468pt}%
+  \setlength\textheight{622pt}%
+  \setlength\headheight{50pt}%
+  \setlength\headsep{12pt}%
+  \setlength\footskip{18pt}%
+  \setlength\footnotesep{24pt}%
+  \setlength\columnsep{2pc}%
+  \setlength\oddsidemargin{0.0in}%
+  \setlength\evensidemargin{0.0in}%
+  \setlength\topmargin{-0.2in}%
+}%
+\DeclareOption*{\relax}%
+\ProcessOptions\relax%
+\endinput%
