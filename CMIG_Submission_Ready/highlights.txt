@@ -1,0 +1,6 @@
+Highlights:
+- CAL-3DH unifies nested calibration and 3D hysteresis for glioma MRI segmentation.
+- Controlled 5-fold audit proves random slice splitting inflates Dice by +8.79%.
+- Nested temperature scaling (T*=1.844) cuts expected calibration error by 46.9%.
+- Anisotropic 3D Z-hysteresis reduces tumor-free slice false alarms by 42.4%.
+- 3D volumes reach ICC=0.8894 and preserve COCCluster radiogenomic signatures.

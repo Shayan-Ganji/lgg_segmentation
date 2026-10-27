@@ -1,0 +1,6 @@
+Declaration of Competing Interest
+
+Manuscript Title: Calibration-Aware Anisotropic 3D Hysteresis and Leakage Auditing for Volumetric Lower-Grade Glioma Segmentation and Radiogenomic Profiling in Brain MRI
+Authors: Shayan Ganji Nataj, Keivan Borna
+
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
