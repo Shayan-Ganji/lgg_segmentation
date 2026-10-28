@@ -66,7 +66,7 @@ The synergistic combination of automated image quality screening ($Q(I)$), multi
 
 \subsection{Related Work on Segmentation Calibration and Data Leakage}
 \label{sec:related_work}
-Automated glioma segmentation has advanced substantially through 2D and 3D deep convolutional networks, spanning classical U-Net architectures~\citep{ronneberger2015u,buda2019association}, attention gating~\citep{oktay2018attention}, and multi-scale nested feature decoders~\citep{zhou2018unetplusplus}. To counter acute foreground-background class imbalance in brain MRI, modern architectures predominantly employ overlap-based objective functions such as Tversky and Focal Tversky losses~\citep{salehi2017tversky,abraham2019novel}. While these formulations maximize spatial overlap, \citet{guo2017calibration} demonstrated that modern neural networks trained with overlap or cross-entropy objectives frequently suffer from severe probability miscalibration, producing overconfident predictions along ambiguous tissue interfaces. In medical image segmentation, uncalibrated probabilities compromise clinical interpretability and distort post-processing threshold sweeps. Concurrently, data leakage arising from random slice-level partitioning in volumetric imaging has emerged as a pervasive threat to methodological validity in computational medicine. When contiguous 2D axial slices from the same subject are distributed across training and test splits, deep networks inevitably memorize patient-specific anatomical morphology and scanner artifacts, generating artificially inflated performance metrics that fail to translate to prospective clinical cohorts. By integrating rigorous patient-grouped partitioning with nested temperature scaling and anisotropic 3D spatial continuity, CAL-3DH systematically unites evaluation integrity with probabilistic reliability and volumetric coherence.
+Automated glioma segmentation has advanced substantially through 2D and 3D deep convolutional networks, spanning classical U-Net architectures~\citep{ronneberger2015u,buda2019association}, attention gating~\citep{oktay2018attention}, and multi-scale nested feature decoders~\citep{zhou2018unetplusplus}. To counter acute foreground-background class imbalance in brain MRI, modern architectures predominantly employ overlap-based objective functions such as Tversky and Focal Tversky losses~\citep{salehi2017tversky,abraham2019novel}. While these formulations maximize spatial overlap, \citet{guo2017calibration} demonstrated that modern neural networks trained with overlap or cross-entropy objectives frequently suffer from severe probability miscalibration, producing overconfident predictions along ambiguous tissue interfaces. In medical image segmentation, uncalibrated probabilities compromise clinical interpretability and distort post-processing threshold sweeps~\citep{mehrtash2020confidence}. Concurrently, data leakage arising from random slice-level partitioning in volumetric imaging has emerged as a pervasive threat to methodological validity in computational medicine~\citep{wen2020convolutional}. When contiguous 2D axial slices from the same subject are distributed across training and test splits, deep networks inevitably memorize patient-specific anatomical morphology and scanner artifacts, generating artificially inflated performance metrics that fail to translate to prospective clinical cohorts. By integrating rigorous patient-grouped partitioning with nested temperature scaling and anisotropic 3D spatial continuity, CAL-3DH systematically unites evaluation integrity with probabilistic reliability and volumetric coherence.
 
 \section{Dataset Audit and Quality-Aware Preprocessing}
 \label{sec:dataset}
@@ -298,7 +298,7 @@ In 2D axial segmentation, high decision thresholds suppress false alarms but tru
     \item \textbf{Fallback Safeguard:} To prevent small apical tumors from collapsing to empty volumes (which imposes maximal boundary distance penalties), if $\mathcal{C}_{\text{valid}} = \emptyset$, components with $\max \hat{P} \ge \tau_{\mathrm{seed}}^*$ are retained. This safeguard is active in both the 3D-filtered ablation (Step 1 + Step 3) and Full CAL-3DH.
 \end{enumerate}
 
-The candidate search lower bounds ($\tau_{z,\mathrm{low}} \ge 0.35$, $\tau_{\mathrm{seed}} \ge 0.70$) were grounded in explicit biophysical and calibration constraints: lowering $\tau_{z,\mathrm{low}}$ below $0.35$ encroaches upon the low-confidence background noise floor and triggers excessive false-positive bleeding into adjacent tumor-free slices, whereas lowering the 3D component seed threshold $\tau_{\mathrm{seed}}$ below $0.70$ drops below the calibrated in-plane decision plateau ($\tau_{xy}^* \in [0.62, 0.84]$, mean $0.74$), violating the hysteresis requirement that every retained 3D lesion component must be anchored by at least one high-confidence core voxel.
+The candidate search lower bounds ($\tau_{z,\mathrm{low}} \ge 0.35$, $\tau_{\mathrm{seed}} \ge 0.70$) were grounded in explicit biophysical and calibration constraints: lowering $\tau_{z,\mathrm{low}}$ below $0.35$ encroaches upon the low-confidence background noise floor and triggers excessive false-positive bleeding into adjacent tumor-free slices (empirically verified on internal validation splits, where relaxing $\tau_{z,\mathrm{low}}$ to $0.25$--$0.30$ degrades specificity by inflating empty-slice false alarms without rescuing additional true boundary slices), whereas lowering the 3D component seed threshold $\tau_{\mathrm{seed}}$ below $0.70$ drops below the calibrated in-plane decision plateau ($\tau_{xy}^* \in [0.62, 0.84]$, mean $0.74$), violating the hysteresis requirement that every retained 3D lesion component must be anchored by at least one high-confidence core voxel.
 
 \section{Experimental Results and Leakage Auditing}
 \label{sec:results}
@@ -395,7 +395,7 @@ To disentangle the specific biophysical contributions of each algorithmic compon
 \item \textbf{Step 1 Only (2D Nested Thresholding, $\tau_{xy}^*$):} Raising the in-plane decision threshold from $0.50$ to the calibrated inner-fold optimum $\tau_{xy}^* = 0.74$ elevates $\text{Dice}_{\text{pos}}$ from $73.96\%$ to $74.60\%$ and improves Precision from $71.95\%$ to $76.51\%$, reducing empty-slice false alarms by $24.9\%$ ($349$ to $262$ slices). However, it leaves missed apical/basal boundary slices unaddressed ($0 / 220$ rescued).
 \item \textbf{Step 1 + Step 2 (+ Axial Z-Continuity Rescue, $\tau_{z,\mathrm{low}}^*$):} Activating axial continuity rescue ($\tau_{z,\mathrm{low}}^* = 0.35$ on slices adjacent to confident 2D seeds) boosts Recall from $80.14\%$ to $80.62\%$, elevates boundary slice Dice from $29.85\%$ to $30.39\%$, and successfully rescues $4$ previously completely missed apical boundary slices ($4 / 220$, $1.82\%$). Because low-threshold propagation can expand into adjacent slices, empty-slice false alarms slightly increase to $291$ slices ($11.38\%$) in the absence of volume filtering.
 \item \textbf{Step 1 + Step 3 (+ 3D Component Filtering, $V_{\min}^*, \tau_{\mathrm{seed}}^*$):} Enforcing 3D connected-component volume filtering ($V_{\min}^* = 38$ voxels, $\tau_{\mathrm{seed}}^* = 0.70$) without Z-rescue aggressively suppresses spurious noise, dropping empty-slice false alarms to $176$ slices ($6.89\%$) and increasing $\text{Dice}_{\text{all}}$ to $86.66\%$ and Precision to $77.34\%$. However, without Z-rescue, missed boundary slices remain unrecovered ($0 / 220$).
-\item \textbf{Full CAL-3DH (Step 1 + Step 2 + Step 3 + Fallback):} Combining both steps harmonizes the operational sensitivity-specificity trade-off. Compared with Step~1 + Step~3 ($\text{Dice}_{\text{pos}} = 74.64\%$, $\text{Dice}_{\text{all}} = 86.66\%$, $\text{FPR}_{\text{empty}} = 6.89\%$), incorporating axial Z-continuity rescue improves positive-slice Dice to $74.92\%$ ($+0.28\text{ pp}$) and boundary-slice Dice from $29.85\%$ to $30.48\%$ (successfully rescuing $4$ missed apical slices) at the modest expense of $25$ additional empty-slice false alarms ($201$ vs.\ $176$ slices; $\text{FPR}_{\text{empty}} = 7.86\%$ vs.\ $6.89\%$, $\text{Dice}_{\text{all}} = 86.12\%$ vs.\ $86.66\%$). Because our primary pre-specified optimization objective prioritizes tumor-bearing sensitivity and positive-slice overlap ($\text{Dice}_{\text{pos}}$), Full CAL-3DH is selected as the primary clinical configuration while still achieving a substantial $42.4\%$ relative false-alarm reduction over the 2D baseline.
+\item \textbf{Full CAL-3DH (Step 1 + Step 2 + Step 3 + Fallback):} Combining both steps harmonizes the operational sensitivity-specificity trade-off through a complementary dual mechanism. Relative to \textbf{Step~1 + Step~2} (axial Z-rescue alone, Row~3: $\text{Dice}_{\text{pos}} = 74.88\%$, $\text{Dice}_{\text{all}} = 83.81\%$, $\text{FPR}_{\text{empty}} = 11.38\%$), adding 3D connected-component volume filtering (Step~3) retains all $4$ rescued apical boundary slices while yielding a modest $+0.04\text{ pp}$ gain in $\text{Dice}_{\text{pos}}$ ($74.88\%$ to $74.92\%$) and $+0.09\text{ pp}$ in boundary Dice ($30.39\%$ to $30.48\%$), while crucially eliminating \textbf{90 false-alarm slices} ($291 \to 201$ slices; a $-3.52\text{ pp}$ or $-30.9\%$ relative reduction in $\text{FPR}_{\text{empty}}$ from $11.38\%$ to $7.86\%$) and boosting overall volumetric accuracy ($\text{Dice}_{\text{all}}$) by $+2.31\text{ pp}$ ($83.81\%$ to $86.12\%$), justifying Step~3 primarily on volumetric specificity grounds. Conversely, relative to \textbf{Step~1 + Step~3} (3D filtering alone, Row~4: $\text{Dice}_{\text{pos}} = 74.64\%$, $\text{Dice}_{\text{all}} = 86.66\%$, $\text{FPR}_{\text{empty}} = 6.89\%$), incorporating axial Z-continuity rescue (Step~2) improves positive-slice Dice by $+0.28\text{ pp}$ ($74.64\%$ to $74.92\%$) and boundary-slice Dice by $+0.63\text{ pp}$ ($29.85\%$ to $30.48\%$, rescuing $4/220$ missed apical slices) at the modest cost of $25$ additional empty-slice false alarms ($176 \to 201$ slices; $\text{FPR}_{\text{empty}} = 6.89\%$ to $7.86\%$). Because our primary pre-specified clinical objective prioritizes tumor-bearing sensitivity and positive-slice overlap ($\text{Dice}_{\text{pos}}$), Full CAL-3DH is selected as the primary clinical configuration while still achieving a substantial $42.4\%$ relative false-alarm reduction over the 2D baseline.
 \end{enumerate}
 
 \begin{table}[tbp]
@@ -588,7 +588,7 @@ The authors thank the National Cancer Institute and the TCGA and TCIA consortia 
 \section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
 During the preparation of this work, the authors used Claude (Anthropic) solely for language editing, grammatical polishing, and code debugging assistance. All experimental designs, mathematical formulations, statistical audits, and scientific interpretations were conducted by the authors. After using these tools, the authors reviewed and edited the content as needed and take full responsibility for the content of the published article.
 
-\begin{thebibliography}{24}
+\begin{thebibliography}{26}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 \providecommand{\url}[1]{\texttt{#1}}
 \providecommand{\href}[2]{#2}
@@ -770,6 +770,17 @@ During the preparation of this work, the authors used Claude (Anthropic) solely 
   \bibinfo{pages}{1231--1251}.
 \newblock \DOIprefix\doi{10.1093/neuonc/noab106}.
 %Type = Article
+\bibitem[{Mehrtash et~al.(2020)Mehrtash, Wells, Tempany, Abolmaesumi and
+  Kapur}]{mehrtash2020confidence}
+\bibinfo{author}{Mehrtash, A.}, \bibinfo{author}{Wells, W.M.},
+  \bibinfo{author}{Tempany, C.M.}, \bibinfo{author}{Abolmaesumi, P.},
+  \bibinfo{author}{Kapur, T.}, \bibinfo{year}{2020}.
+\newblock \bibinfo{title}{Confidence calibration and predictive uncertainty
+  estimation for deep medical image segmentation}.
+\newblock \bibinfo{journal}{IEEE Trans. Med. Imaging} \bibinfo{volume}{39},
+  \bibinfo{pages}{3868--3878}.
+\newblock \DOIprefix\doi{10.1109/TMI.2020.3006437}.
+%Type = Article
 \bibitem[{Oktay et~al.(2018)Oktay, Schlemper, Folgoc, Lee, Heinrich, Misawa,
   Mori, McDonagh, Hammerla, Kainz, Glocker and Rueckert}]{oktay2018attention}
 \bibinfo{author}{Oktay, O.}, \bibinfo{author}{Schlemper, J.},
@@ -823,6 +834,21 @@ During the preparation of this work, the authors used Claude (Anthropic) solely 
 \newblock \bibinfo{journal}{Psychol. Bull.} \bibinfo{volume}{86},
   \bibinfo{pages}{420--428}.
 \newblock \DOIprefix\doi{10.1037/0033-2909.86.2.420}.
+%Type = Article
+\bibitem[{Wen et~al.(2020)Wen, Thibeau-Sutre, Diaz-Melo, Samper-Gonz{\'a}lez,
+  Routier, Bottani, Dormont, Durrleman, Burgos and
+  Colliot}]{wen2020convolutional}
+\bibinfo{author}{Wen, J.}, \bibinfo{author}{Thibeau-Sutre, E.},
+  \bibinfo{author}{Diaz-Melo, M.}, \bibinfo{author}{Samper-Gonz{\'a}lez, J.},
+  \bibinfo{author}{Routier, A.}, \bibinfo{author}{Bottani, S.},
+  \bibinfo{author}{Dormont, D.}, \bibinfo{author}{Durrleman, S.},
+  \bibinfo{author}{Burgos, N.}, \bibinfo{author}{Colliot, O.},
+  \bibinfo{year}{2020}.
+\newblock \bibinfo{title}{Convolutional neural networks for classification of
+  {Alzheimer's} disease: Overview and reproducible evaluation}.
+\newblock \bibinfo{journal}{Med. Image Anal.} \bibinfo{volume}{63},
+  \bibinfo{pages}{101694}.
+\newblock \DOIprefix\doi{10.1016/j.media.2020.101694}.
 %Type = Inproceedings
 \bibitem[{Wu and He(2018)}]{wu2018group}
 \bibinfo{author}{Wu, Y.}, \bibinfo{author}{He, K.}, \bibinfo{year}{2018}.
