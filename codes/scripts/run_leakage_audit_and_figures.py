@@ -373,7 +373,7 @@ def plot_threshold_sensitivity(data_pg):
 
     ax1.axvline(x=0.76, color="#e7298a", linestyle="-.", linewidth=1.8)
     ax1.annotate(
-        r"Leaked Pooled $\tau_{leak}^* = 0.76$" + "\n" + r"(Raw equiv: $0.88$, $Dice_{pos}=74.66\%$)" + "\n" + r"($\Delta\mathrm{Optimism}=+0.063\%$)",
+        r"Leaked Pooled $\tau_{leak}^* = 0.76$" + "\n" + r"(Raw equiv: $0.88$, $Dice_{pos}=74.66\%$)" + "\n" + r"($\Delta\mathrm{Optimism}=+0.063\mathrm{\ pp}$)",
         xy=(0.76, 74.66), xytext=(0.55, 70.0),
         color="#c2185b", fontsize=7.8,
         bbox=dict(facecolor="#fce4ec", alpha=0.95, edgecolor="#e7298a", pad=3),
@@ -397,6 +397,12 @@ def plot_threshold_sensitivity(data_pg):
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
     fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.pdf"), bbox_inches="tight", pad_inches=0.20)
     fig.savefig(os.path.join(sub_dir, "fig_threshold_sensitivity.png"), bbox_inches="tight", pad_inches=0.20)
+
+    cmig_fig_dir = os.path.join(PROJECT_ROOT, "paper_cmig_submission", "figures")
+    cmig_ready_dir = os.path.join(PROJECT_ROOT, "CMIG_Submission_Ready")
+    fig.savefig(os.path.join(cmig_fig_dir, "fig_threshold_sensitivity.pdf"), bbox_inches="tight", pad_inches=0.20)
+    fig.savefig(os.path.join(cmig_ready_dir, "Figure_5.pdf"), bbox_inches="tight", pad_inches=0.20)
+
     plt.close(fig)
     print(f"[OK] Saved Threshold Sensitivity Plot to:\n     {pdf_path}")
 

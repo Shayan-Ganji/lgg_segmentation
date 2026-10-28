@@ -204,7 +204,7 @@ draw_arrow(84.75, 56.5, 84.75, 51.5)
 
 # 2. Z-Continuity Rescue
 draw_box(73.0, 37.0, 23.5, 14.5, "2. Anisotropic Axial Boundary Rescue",
-         "If slice $z$ empty, check adjacent $z \\pm 1$:\n$S_{prior} = \\text{Dilate}_{2D}(M_{z-1}^{(0)} \\cup M_{z+1}^{(0)}, \\mathcal{K}_{3\\times 3})$\nRescue: $M_z^{(1)} = M_z^{(0)} \\cup (S_{prior} \\cap \\mathbb{I}(\\hat{P}_z \\geq \\tau_{z\\_low}^*))$\nDecouples in-plane $\\tau_{xy}^* = 0.74$ from axial $\\tau_{z\\_low}^* = 0.45$",
+         "If slice $z$ empty, check adjacent $z \\pm 1$:\n$S_{prior} = \\text{Dilate}_{2D}(M_{z-1}^{(0)} \\cup M_{z+1}^{(0)}, \\mathcal{K}_{3\\times 3})$\nRescue: $M_z^{(1)} = M_z^{(0)} \\cup (S_{prior} \\cap \\mathbb{I}(\\hat{P}_z \\geq \\tau_{z,\\mathrm{low}}^*))$\nDecouples in-plane $\\tau_{xy}^* = 0.74$ from axial $\\tau_{z,\\mathrm{low}}^* = 0.35$",
          bg="#e8f5e9", border=c_hyst, title_color=c_hyst, fontsize=8.8)
 draw_arrow(84.75, 37.0, 84.75, 32.0)
 
@@ -229,11 +229,15 @@ pdf_out = os.path.join(FIG_DIR, "fig_architecture_pipeline.pdf")
 png_out = os.path.join(FIG_DIR, "fig_architecture_pipeline.png")
 paper_pdf = os.path.join(PAPER_FIG_DIR, "fig_architecture_pipeline.pdf")
 paper_png = os.path.join(PAPER_FIG_DIR, "fig_architecture_pipeline.png")
+cmig_fig_dir = os.path.join(PROJECT_ROOT, "paper_cmig_submission", "figures")
+cmig_ready_dir = os.path.join(PROJECT_ROOT, "CMIG_Submission_Ready")
 
 fig.savefig(pdf_out, bbox_inches="tight", pad_inches=0.15)
 fig.savefig(png_out, bbox_inches="tight", pad_inches=0.15)
 fig.savefig(paper_pdf, bbox_inches="tight", pad_inches=0.15)
 fig.savefig(paper_png, bbox_inches="tight", pad_inches=0.15)
+fig.savefig(os.path.join(cmig_fig_dir, "fig_architecture_pipeline.pdf"), bbox_inches="tight", pad_inches=0.15)
+fig.savefig(os.path.join(cmig_ready_dir, "Figure_2.pdf"), bbox_inches="tight", pad_inches=0.15)
 plt.close(fig)
 
 print(f"[OK] Generated Architecture & Pipeline Diagram:\n  -> {pdf_out}\n  -> {paper_pdf}")
