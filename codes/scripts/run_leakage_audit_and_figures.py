@@ -192,11 +192,12 @@ def plot_reliability_diagram(cal_pg_uncal, cal_pg_cal, cal_rs):
     ax2.set_title("(b) Confidence Distribution Across Cohort Voxels")
 
     plt.tight_layout()
+    fig.subplots_adjust(top=0.92)
     pdf_path = os.path.join(FIG_DIR, "fig_reliability_diagram.pdf")
     png_path = os.path.join(FIG_DIR, "fig_reliability_diagram.png")
-    fig.savefig(pdf_path)
-    fig.savefig(png_path)
-
+    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(os.path.join(PROJECT_ROOT, "JIIM_Submission_Ready", "Fig3.pdf"), bbox_inches="tight", pad_inches=0.15)
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
     fig.savefig(os.path.join(sub_dir, "fig_reliability_diagram.pdf"))
     fig.savefig(os.path.join(sub_dir, "fig_reliability_diagram.png"))
@@ -250,12 +251,12 @@ def plot_training_convergence():
     ax = axes[0, 1]
     m_tr, s_tr = np.mean(tr_dice_pg, axis=0), np.std(tr_dice_pg, axis=0)
     m_val, s_val = np.mean(val_dice_pg, axis=0), np.std(val_dice_pg, axis=0)
-    ax.plot(ep_pg, m_tr, color="#1f78b4", linewidth=2.0, label="Train Dice (Augmented)")
+    ax.plot(ep_pg, m_tr, color="#1f78b4", linewidth=2.0, label="Train Soft Overlap (Augmented)")
     ax.fill_between(ep_pg, m_tr - s_tr, m_tr + s_tr, color="#1f78b4", alpha=0.18)
-    ax.plot(ep_pg, m_val, color="#e31a1c", linewidth=2.0, linestyle="--", label="Val Dice (Unseen Patients)")
+    ax.plot(ep_pg, m_val, color="#e31a1c", linewidth=2.0, linestyle="--", label="Val Soft Overlap (Unseen Patients)")
     ax.fill_between(ep_pg, m_val - s_val, m_val + s_val, color="#e31a1c", alpha=0.18)
-    ax.set_ylabel("Dice Similarity (%)", fontweight="bold")
-    ax.set_title("(b) Patient-Grouped: Dice", fontsize=11, fontweight="bold")
+    ax.set_ylabel("Soft Overlap (%)", fontweight="bold")
+    ax.set_title("(b) Patient-Grouped: Soft Overlap", fontsize=11, fontweight="bold")
     ax.legend(loc="lower right", frameon=True, fontsize=8.5)
     ax.set_ylim(20, 75)
 
@@ -277,13 +278,13 @@ def plot_training_convergence():
     ax = axes[1, 1]
     m_tr, s_tr = np.mean(tr_dice_rs, axis=0), np.std(tr_dice_rs, axis=0)
     m_val, s_val = np.mean(val_dice_rs, axis=0), np.std(val_dice_rs, axis=0)
-    ax.plot(ep_rs, m_tr, color="#1f78b4", linewidth=2.0, label="Train Dice (Augmented)")
+    ax.plot(ep_rs, m_tr, color="#1f78b4", linewidth=2.0, label="Train Soft Overlap (Augmented)")
     ax.fill_between(ep_rs, m_tr - s_tr, m_tr + s_tr, color="#1f78b4", alpha=0.18)
-    ax.plot(ep_rs, m_val, color="#d95f02", linewidth=2.0, linestyle="--", label="Val Dice (Leaked Slices)")
+    ax.plot(ep_rs, m_val, color="#d95f02", linewidth=2.0, linestyle="--", label="Val Soft Overlap (Leaked Slices)")
     ax.fill_between(ep_rs, m_val - s_val, m_val + s_val, color="#d95f02", alpha=0.18)
     ax.set_xlabel("Epoch", fontweight="bold")
-    ax.set_ylabel("Dice Similarity (%)", fontweight="bold")
-    ax.set_title("(d) Random-Slice: Curve Inversion", fontsize=11, fontweight="bold", color="#b30000")
+    ax.set_ylabel("Soft Overlap (%)", fontweight="bold")
+    ax.set_title("(d) Random-Slice: Overlap Inversion", fontsize=11, fontweight="bold", color="#b30000")
     ax.legend(loc="lower right", frameon=True, fontsize=8.5)
     ax.set_ylim(20, 95)
 
@@ -293,6 +294,7 @@ def plot_training_convergence():
     png_path = os.path.join(FIG_DIR, "fig_training_convergence.png")
     fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.15)
     fig.savefig(png_path, bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(os.path.join(PROJECT_ROOT, "JIIM_Submission_Ready", "Fig4.pdf"), bbox_inches="tight", pad_inches=0.15)
 
     # Copy to submission folder
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
