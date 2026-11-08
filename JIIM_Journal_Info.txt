@@ -1,0 +1,22 @@
+Journal of Imaging Informatics in Medicine (JIIM)
+Official Journal of the Society for Imaging Informatics in Medicine (SIIM)
+Publisher: Springer Nature
+ISSN: 2731-8931 (Electronic) | 2731-8923 (Print)
+Formerly: Journal of Digital Imaging (JDI, 1988–2023)
+Website: https://link.springer.com/journal/10278
+Editor-in-Chief: Bradley J. Erickson, MD, PhD (Mayo Clinic)
+
+Aims and Scope:
+The Journal of Imaging Informatics in Medicine (JIIM) publishes peer-reviewed research that advances the science and application of imaging informatics in healthcare. Topics include:
+- Machine learning, deep learning, and foundation models in diagnostic neuroimaging and oncology
+- Rigorous data auditing, leakage detection, calibration, and reproducibility in medical image analysis
+- Post-processing, volumetric 3D reconstruction, and clinical agreement metrics
+- Radiogenomics, multi-institutional cohort validation, and clinical translation
+- Standards, open-source computational tools, and ethical artificial intelligence
+
+Submission Formatting Requirements:
+- Title Page: Separate file containing Title, Authors, Affiliations, Corresponding Author contact, Conflict of Interest statement, Acknowledgments, Statements and Declarations (Funding, Competing Interests, Author Contributions, Ethics Approval, Consent to Participate/Publish, Data and Code Availability).
+- Blinded Manuscript: Complete text, equations, tables, figures, and references with all author names, institutional affiliations, and identifying links strictly blinded.
+- Full Manuscript: Complete text including author details for post-review production.
+- Cover Letter: Addressed to Editor-in-Chief (Bradley J. Erickson, MD, PhD) highlighting core methodological and clinical contributions.
+- References: Standard numbered or author-year Springer Nature reference style.
