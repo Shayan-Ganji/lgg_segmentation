@@ -172,7 +172,7 @@ def plot_reliability_diagram(cal_pg_uncal, cal_pg_cal, cal_rs):
     ax1.set_ylabel("Empirical Accuracy (Fraction of Positives)")
     ax1.set_ylim(-0.02, 1.02)
     ax1.legend(loc="upper left", frameon=True, framealpha=0.9)
-    ax1.set_title("(a) Reliability Diagram (Probability Calibration Curve)")
+    ax1.set_title("(a) Reliability Diagram (Probability Calibration Curve)", pad=14)
 
     # Bottom Histogram of Confidence Frequencies
     bin_centers = 0.5 * (cal_pg_uncal["bins"][:-1] + cal_pg_uncal["bins"][1:])
@@ -192,15 +192,15 @@ def plot_reliability_diagram(cal_pg_uncal, cal_pg_cal, cal_rs):
     ax2.set_title("(b) Confidence Distribution Across Cohort Voxels")
 
     plt.tight_layout()
-    fig.subplots_adjust(top=0.92)
+    fig.subplots_adjust(top=0.90)
     pdf_path = os.path.join(FIG_DIR, "fig_reliability_diagram.pdf")
     png_path = os.path.join(FIG_DIR, "fig_reliability_diagram.png")
-    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.15)
-    fig.savefig(os.path.join(PROJECT_ROOT, "JIIM_Submission_Ready", "Fig3.pdf"), bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.25)
+    fig.savefig(png_path, bbox_inches="tight", pad_inches=0.25)
+    fig.savefig(os.path.join(PROJECT_ROOT, "JIIM_Submission_Ready", "Fig3.pdf"), bbox_inches="tight", pad_inches=0.25)
     sub_dir = os.path.join(PROJECT_ROOT, "paper_bspc_submission", "figures")
-    fig.savefig(os.path.join(sub_dir, "fig_reliability_diagram.pdf"))
-    fig.savefig(os.path.join(sub_dir, "fig_reliability_diagram.png"))
+    fig.savefig(os.path.join(sub_dir, "fig_reliability_diagram.pdf"), bbox_inches="tight", pad_inches=0.25)
+    fig.savefig(os.path.join(sub_dir, "fig_reliability_diagram.png"), bbox_inches="tight", pad_inches=0.25)
     plt.close(fig)
     print(f"[OK] Saved Reliability Diagram to:\n     {pdf_path}")
 
