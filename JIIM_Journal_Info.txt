@@ -20,3 +20,4 @@ Submission Formatting Requirements:
 - Full Manuscript: Complete text including author details for post-review production.
 - Cover Letter: Addressed to Editor-in-Chief (Bradley J. Erickson, MD, PhD) highlighting core methodological and clinical contributions.
 - References: Standard numbered or author-year Springer Nature reference style.
+
